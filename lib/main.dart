@@ -18,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final _messageStreamController = BehaviorSubject<RemoteMessage>();
 
-
+//
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 
@@ -66,8 +66,8 @@ void main() async {
   if (kDebugMode) {
     print('Registration Token=$token');
   }
-
-
+  // todo token from FCM
+  // dAzrpQk0Ta-EdorIC32lLX:APA91bGLNylTsMm07qYgVhUFN0EvPJsy1ozPwWZCMBQWadzlp_hqAbmlfncDYHjZ5hmr4KCtPP4gqcVqQoasIvtA4ZaaH9z7OcXy9PxPTqjA3VULRMhKoGz1RVh4Esr_Uypx55L8kYfA
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     if (kDebugMode) {
       print('Handling a foreground message: ${message.messageId}');
