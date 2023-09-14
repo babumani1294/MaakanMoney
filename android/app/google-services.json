@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "480764495103",
+    "firebase_url": "https://maakanmoney-a6874-default-rtdb.firebaseio.com",
+    "project_id": "maakanmoney-a6874",
+    "storage_bucket": "maakanmoney-a6874.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:480764495103:android:607361ea44f945958e38ca",
+        "android_client_info": {
+          "package_name": "com.example.maaakanmoney"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUmqkw5lQ6nC06opFAIsxFXuSn4VwDlPA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:480764495103:android:864f18ad3b7f1b6b8e38ca",
+        "android_client_info": {
+          "package_name": "com.maaakanmoney.mm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUmqkw5lQ6nC06opFAIsxFXuSn4VwDlPA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
