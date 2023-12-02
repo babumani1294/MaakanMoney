@@ -27,15 +27,16 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ShowUserWidget extends ConsumerStatefulWidget {
-  ShowUserWidget({
-    Key? key,
-    @required this.getMobile,
-    @required this.getExistingTotal,
-    @required this.getDocId,
-    @required this.getUserName,
-    @required this.getUserIndex,
-    @required this.getSecurityCode,
-  }) : super(key: key);
+  ShowUserWidget(
+      {Key? key,
+      @required this.getMobile,
+      @required this.getExistingTotal,
+      @required this.getDocId,
+      @required this.getUserName,
+      @required this.getUserIndex,
+      @required this.getSecurityCode,
+      @required this.getAdminType})
+      : super(key: key);
 
   String? getUserName;
   String? getMobile;
@@ -43,6 +44,7 @@ class ShowUserWidget extends ConsumerStatefulWidget {
   String? getDocId;
   int? getUserIndex;
   String? getSecurityCode;
+  String? getAdminType;
 
   @override
   _ShowUserWidgetState createState() => _ShowUserWidgetState();
@@ -120,6 +122,22 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                             widget.getSecurityCode.toString(),
                       ),
                       Row(
+                        children: [
+                          Text(
+                            "Mapped Admin",
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            widget.getAdminType.toString() == "1"
+                                ? " - Meena"
+                                : widget.getAdminType.toString() == "2"
+                                    ? " - Babu"
+                                    : "",
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           Flexible(
@@ -132,7 +150,7 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
                                         fontSize: 15.0,
                                       ),
@@ -143,7 +161,7 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
                                         fontSize: 13.0,
                                       ),
@@ -161,7 +179,7 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
                                         fontSize: 15.0,
                                       ),
@@ -172,7 +190,7 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
                                         fontSize: 13.0,
                                       ),
@@ -190,7 +208,7 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
                                         fontSize: 15.0,
                                       ),
@@ -201,7 +219,7 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
                                         fontSize: 13.0,
                                       ),
@@ -219,7 +237,7 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
                                         fontSize: 15.0,
                                       ),
@@ -231,7 +249,7 @@ class _ShowUserWidgetState extends ConsumerState<ShowUserWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
                                         fontSize: 13.0,
                                       ),

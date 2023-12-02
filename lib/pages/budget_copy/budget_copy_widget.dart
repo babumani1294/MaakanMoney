@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings, invalid_return_type_for_catch_error, unused_local_variable
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/gestures.dart';
@@ -30,6 +31,7 @@ import 'BudgetCopyController.dart';
 export 'budget_copy_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:external_app_launcher/external_app_launcher.dart';
+import 'package:http/http.dart' as http;
 
 class BudgetCopyWidget extends ConsumerStatefulWidget {
   const BudgetCopyWidget({Key? key}) : super(key: key);
@@ -53,19 +55,21 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
 
   CollectionReference? _collectionReference;
   CollectionReference? _collectionUsers;
+  CollectionReference? _collectionRefToken;
 
-  List<String> imagePaths = [
-    'images/background1.png',
-    'images/background3.png',
-  ];
+  final txtReqAmount = TextEditingController();
+
 
   String? lastProcessedMessageId;
   @override
   void initState() {
     super.initState();
     // _startTimer();
+    // todo:-29.9.23
     _collectionReference =
         FirebaseFirestore.instance.collection('adminDetails');
+    _collectionRefToken =
+        FirebaseFirestore.instance.collection('AdminToken');
     _collectionUsers = FirebaseFirestore.instance.collection('users');
     ref
         .read(adminDashListProvider.notifier)
@@ -80,10 +84,22 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
       ref.read(adminDashListProvider.notifier).getDashboardDetails();
     });
 
+    //todo:- 30.11.23, if login with - 0805080588, means , that device token is admin app token, user app through notification to that token,means that device receives notifcation from users
+    if (Constants.isAdmin2) {
+      print(Constants.adminDeviceToken);
+      // getDocumentIDsAndData();
+      updateAdminToken(Constants.adminDeviceToken);
+      // getDocumentIDsAndData();
+    }
+
     // addNewFieldToDocuments();
     // renameFieldInDocuments();
     // deleteFieldInDocuments();
     // addNewFieldToTransactions();
+    //addNewCollectionWithDocument();
+    //getDocumentIDsAndData()
+    //updateAdminToken();
+
   }
 
   Future<bool> _onWillPop() async {
@@ -128,8 +144,8 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
     //todo:- 16.6.23
     final currentTime = DateTime.now().toLocal();
     final currentHour = currentTime.hour;
-    int randomIndex = math.Random().nextInt(imagePaths.length);
-    String randomImagePath = imagePaths[randomIndex];
+    // int randomIndex = math.Random().nextInt(imagePaths.length);
+    // String randomImagePath = imagePaths[randomIndex];
 
     String greetingText = '';
 
@@ -170,15 +186,15 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                   children: [
                                     const Text.rich(
                                       TextSpan(
-                                        text: 'Hi..! ',
+                                        text: 'Maaka ',
                                         children: [
                                           TextSpan(
-                                            text: "Admin",
+                                            text: "Users",
                                             style: TextStyle(
-                                                fontSize: 23.0,
-                                                fontFamily: 'Poppins',
+                                                fontSize: 22.0,
+                                                fontFamily: 'Outfit',
                                                 color: Colors.white,
-                                                fontWeight: FontWeight.w600,
+                                                fontWeight: FontWeight.normal,
                                                 letterSpacing: 1),
                                           ),
                                         ],
@@ -186,21 +202,27 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.normal,
                                         color: Colors.white,
-                                        fontSize: 23.0,
+                                        fontSize: 22.0,
                                         letterSpacing: 1.0,
-                                        fontFamily: 'Poppins',
+                                        fontFamily: 'Outfit',
                                       ),
                                     ),
-                                    Text(
-                                      greetingText,
-                                      style: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .override(
-                                            fontFamily: 'Poppins',
-                                            color: Colors.white,
-                                            fontSize: 18.0,
-                                          ),
-                                    ),
+                                    Consumer(builder: (context, ref, child) {
+                                      List<User2>? userCount =
+                                          ref.watch(getListItemProvider);
+
+                                      return Text(
+                                        userCount?.length.toString() ?? "",
+                                        style: FlutterFlowTheme.of(context)
+                                            .titleSmall
+                                            .override(
+                                              fontFamily: 'Outfit',
+                                              color: Colors.white,
+                                              fontSize: 30.0,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                      );
+                                    }),
                                   ],
                                 ),
                               )
@@ -217,15 +239,15 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                           children: [
                             const Text.rich(
                               TextSpan(
-                                text: 'Hi..! ',
+                                text: 'Maaka ',
                                 children: [
                                   TextSpan(
-                                    text: "Admin",
+                                    text: "Users",
                                     style: TextStyle(
-                                        fontSize: 23.0,
-                                        fontFamily: 'Poppins',
+                                        fontSize: 22.0,
+                                        fontFamily: 'Outfit',
                                         color: Colors.white,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.normal,
                                         letterSpacing: 1),
                                   ),
                                 ],
@@ -233,74 +255,99 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                               style: TextStyle(
                                 fontWeight: FontWeight.normal,
                                 color: Colors.white,
-                                fontSize: 23.0,
+                                fontSize: 22.0,
                                 letterSpacing: 1.0,
-                                fontFamily: 'Poppins',
+                                fontFamily: 'Outfit',
                               ),
                             ),
                             Text(
-                              greetingText,
+                              ref
+                                  .read(getListItemProvider.notifier)
+                                  .state!
+                                  .length
+                                  .toString(),
                               style: FlutterFlowTheme.of(context)
                                   .titleSmall
                                   .override(
-                                    fontFamily: 'Poppins',
+                                    fontFamily: 'Outfit',
                                     color: Colors.white,
-                                    fontSize: 18.0,
+                                    fontSize: 30.0,
+                                    fontWeight: FontWeight.w900,
                                   ),
                             ),
                           ],
                         ),
                       ),
                 actions: [
+                  Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                            0.0, 0.0, 20.0, 0.0),
+                        child: InkWell(
+                          splashColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          onTap: () async {
+                            txtReqAmount.text = "";
+                            _showBottomSheet(
+                              context,
+                            );
+                          },
+                          child: Icon(
+                            Icons.notification_add,
+                            color: FlutterFlowTheme.of(context).primaryBtnText,
+                            size: 24.0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   Consumer(builder: (context, ref, child) {
                     int? isPendingRequest = ref.watch(isPendingReq);
                     int? isPendingCashbckRequest =
                         ref.watch(isPendingCashbckReq);
                     int? isPendingMessage = ref.watch(isPendingMessages);
 
-                    return Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 20.0, 0.0),
-                          child: InkWell(
-                            splashColor: Colors.transparent,
-                            focusColor: Colors.transparent,
-                            hoverColor: Colors.transparent,
-                            highlightColor: Colors.transparent,
-                            onTap: () async {
-                              showDialog(
-                                  barrierDismissible: false,
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return CustomDialogBox(
-                                      title: "Alert!",
-                                      descriptions:
-                                          "Are you sure, Do you want to logout",
-                                      text: "Ok",
-                                      isCancel: true,
-                                      onTap: () {
-                                        // openAnotherApp("com.phonepe.app");
-                                        Navigator.pushAndRemoveUntil(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) => MyPhone()),
-                                          (route) =>
-                                              false, // Remove all routes from the stack
-                                        );
-                                      },
+                    return Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 0.0, 20.0, 0.0),
+                      child: InkWell(
+                        splashColor: Colors.transparent,
+                        focusColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        onTap: () async {
+                          showDialog(
+                              barrierDismissible: false,
+                              context: context,
+                              builder: (BuildContext context) {
+                                return CustomDialogBox(
+                                  title: "Alert!",
+                                  descriptions:
+                                      "Are you sure, Do you want to logout",
+                                  text: "Ok",
+                                  isCancel: true,
+                                  onTap: () {
+                                    // openAnotherApp("com.phonepe.app");
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => MyPhone()),
+                                      (route) =>
+                                          false, // Remove all routes from the stack
                                     );
-                                  });
-                            },
-                            child: Icon(
-                              Icons.logout,
-                              color:
-                                  FlutterFlowTheme.of(context).primaryBtnText,
-                              size: 24.0,
-                            ),
-                          ),
+                                  },
+                                );
+                              });
+                        },
+                        child: Icon(
+                          Icons.logout,
+                          color: FlutterFlowTheme.of(context).primaryBtnText,
+                          size: 24.0,
                         ),
-                      ],
+                      ),
                     );
                   }),
                 ],
@@ -443,7 +490,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                                       FontWeight
                                                                           .w500,
                                                                   fontFamily:
-                                                                      'Poppins',
+                                                                      'Outfit',
                                                                   color: FlutterFlowTheme.of(
                                                                           context)
                                                                       .primary,
@@ -516,7 +563,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                               .bodyLarge
                                                               .override(
                                                                 fontFamily:
-                                                                    'Poppins',
+                                                                    'Outfit',
                                                                 color: FlutterFlowTheme.of(
                                                                         context)
                                                                     .primary,
@@ -542,7 +589,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                               .headlineSmall
                                                               .override(
                                                                 fontFamily:
-                                                                    'Poppins',
+                                                                    'Outfit',
                                                                 color: FlutterFlowTheme.of(
                                                                         context)
                                                                     .primary,
@@ -662,36 +709,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                       ),
                                     ),
                                   ),
-                                  Container(
-                                    width: 100.w,
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    child: Center(
-                                      child: ClipPath(
-                                        clipper: ImageClipper(),
-                                        child: Padding(
-                                          padding: const EdgeInsetsDirectional
-                                              .fromSTEB(8.0, 0.0, 8.0, 6.0),
-                                          child: Card(
-                                            elevation: 18,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(6.0),
-                                            ),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.all(0.0),
-                                              child: Image.asset(
-                                                randomImagePath,
-                                                width: 100.w,
-                                                height: 100.h,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+
                                   Container(
                                     width: 100.w,
                                     color: FlutterFlowTheme.of(context).primary,
@@ -738,7 +756,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                                       FontWeight
                                                                           .w500,
                                                                   fontFamily:
-                                                                      'Poppins',
+                                                                      'Outfit',
                                                                   color: FlutterFlowTheme.of(
                                                                           context)
                                                                       .primary,
@@ -808,7 +826,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                               .bodyLarge
                                                               .override(
                                                                 fontFamily:
-                                                                    'Poppins',
+                                                                    'Outfit',
                                                                 color: FlutterFlowTheme.of(
                                                                         context)
                                                                     .primary,
@@ -830,7 +848,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                               .headlineSmall
                                                               .override(
                                                                 fontFamily:
-                                                                    'Poppins',
+                                                                    'Outfit',
                                                                 color: FlutterFlowTheme.of(
                                                                         context)
                                                                     .primary,
@@ -1055,10 +1073,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                   return SliverList(
                                     delegate: SliverChildBuilderDelegate(
                                       (BuildContext context, int index) {
-                                        // final document = ref
-                                        //     .read(
-                                        //         adminDashListProvider.notifier)
-                                        //     .userList2![index];
+
                                         final document = ref
                                             .read(getListItemProvider.notifier)
                                             .state![index];
@@ -1070,6 +1085,8 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                         final total = document.getNetBal();
                                         final interest =
                                             document.getNetIntBal();
+                                        final getAdminType =
+                                            document.getAdminType;
 
                                         String? getDocId = document.docId;
                                         bool? isMoneyRequest =
@@ -1438,10 +1455,10 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                                       .ellipsis,
                                                               style: const TextStyle(
                                                                   color: Colors
-                                                                      .grey,
+                                                                      .blueGrey,
                                                                   fontWeight:
                                                                       FontWeight
-                                                                          .normal,
+                                                                          .bold,
                                                                   fontSize:
                                                                       14.0,
                                                                   letterSpacing:
@@ -1466,6 +1483,8 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                               getSecurityCode:
                                                                   securityCode
                                                                       .toString(),
+                                                              getAdminType:
+                                                                  getAdminType,
                                                             ),
                                                           )).then((value) {});
                                                     },
@@ -1888,6 +1907,11 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                     .enquiryList?[index];
 
                                                 final mobile = document?.mobile;
+                                                final enquiryReason =
+                                                    document?.enquiryReason;
+                                                final name = document?.name;
+                                                final refNumber =
+                                                    document?.refNumber;
 
                                                 return Container(
                                                   color: Colors.white
@@ -1974,7 +1998,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                               ),
                                                             ),
                                                             title: Text(
-                                                              mobile
+                                                              name
                                                                   .toString()
                                                                   .toUpperCase(),
                                                               overflow:
@@ -1991,6 +2015,22 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                                                                   letterSpacing:
                                                                       0.5),
                                                             ),
+                                                            subtitle: Text(
+                                                                '$mobile',
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                                style: TextStyle(
+                                                                    color: Colors
+                                                                        .grey
+                                                                        .shade600,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        12.0,
+                                                                    letterSpacing:
+                                                                        0.5)),
                                                             onTap: () {},
                                                           ),
                                                         ),
@@ -2412,7 +2452,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
                           width: 25,
                         ),
                         Visibility(
-                          visible: isPendingRequest == 0 ? false : true,
+                          visible: isPendingCshbckReq == 0 ? false : true,
                           child: Positioned(
                             right: -5,
                             top: -5,
@@ -2460,6 +2500,139 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
     );
   }
 
+  void _showBottomSheet(
+    BuildContext context,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return _buildBottomSheetContent(
+          context,
+        );
+      },
+    ).whenComplete(() {
+      // Reset focus when the bottom sheet is closed
+      FocusScope.of(context).requestFocus(FocusNode());
+    });
+  }
+
+  Widget _buildBottomSheetContent(
+    BuildContext context,
+  ) {
+    return SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          // Add your desired height to the container
+          height: 250,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                "Amount to Request from Customers!",
+                style: TextStyle(
+                    color: FlutterFlowTheme.of(context).primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.0,
+                    letterSpacing: 1),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextFormField(
+                  controller: txtReqAmount,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Enter amount',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      double amount = txtReqAmount.text.isEmpty
+                          ? 0
+                          : double.parse(txtReqAmount.text);
+                      if (amount != 0) {
+                        Response res =
+                            await postNotificationRequest(amount.toString());
+
+                        if (res.statusCode == 200) {
+                          txtReqAmount.text = "";
+                          Constants.showToast("Amount Requested Successfully!",
+                              ToastGravity.CENTER);
+                        } else {
+                          txtReqAmount.text = "";
+                          Constants.showToast("Problem in Requesting Amount!",
+                              ToastGravity.CENTER);
+                        }
+
+                        Navigator.pop(context);
+                      } else {
+                        Constants.showToast(
+                            txtReqAmount.text.isEmpty
+                                ? "Please Enter Amount"
+                                : "Please Enter Valid Amount",
+                            ToastGravity.CENTER);
+                        return;
+                      }
+                    },
+                    child: Text('Request'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ));
+  }
+
+  postNotificationRequest(String? amount) async {
+    Response? res;
+    var url = Uri.parse("https://fcm.googleapis.com/fcm/send");
+
+    try {
+      var response = await http.Client().post(url,
+          body: jsonEncode({
+            "to": "/topics/all",
+            "priority": "high",
+            "notification": {
+              "title": "Send Rs.$amount Now,\nLet Us Save Your Money!",
+              "body": "Maaka: Your Money Saving Partner\nSaving is Earning.",
+            },
+            "data": {
+              "custom_key":
+                  "custom_value" // Optional: You can include custom data here
+            }
+          }),
+          headers: {
+            "Accept": "application/json",
+            "Content-type": "application/json",
+            "Authorization":
+                "key=AAAAb-_MBP8:APA91bFubSJ4pOcNkYMD9uFXekSyOQel1Mzojc1Q7noOPRiR-WNu_C_FgoZ-lQ6Maa1A52NqAoLM7tdQTZ7nEeXs_WUhhqjUg5B0P2lCp2rf95PxdR0PaOSVZUz8UeWJArogfm3gFKRp",
+          });
+
+      var body = response.body;
+      print("JSON Response -- $body");
+      if (response.statusCode == 200) {
+        body = await response.body;
+      }
+      res = Response(response.statusCode, body);
+    } on SocketException catch (e) {
+      print(e);
+      res = Response(
+          001, 'No Internet Connection\nPlease check your network status');
+    }
+
+    print("res <- ${res.resBody.toString()}");
+    return res;
+  }
+
   //todo:- add this code snippet for adding new field to firestore collection
   Future<void> addNewFieldToDocuments() async {
     final CollectionReference collectionRef =
@@ -2482,7 +2655,8 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
       //   await document.reference.update(data);
       // }
       // Add the new field to the data
-      data['requestCashbckAmnt'] = 0.0;
+      data['isCanMoneyReq'] = false;
+      data['isCanCashbackReq'] = false;
 
       // Update the document with the new field
       await document.reference.update(data);
@@ -2566,9 +2740,69 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
       final DocumentReference docRef = collectionRef.doc(document.id);
 
       // Update the document by removing the field
-      await docRef.update({'netIntTotal': FieldValue.delete()});
+      await docRef.update({'mappedAdmin': FieldValue.delete()});
     }
   }
+
+
+  //todo:- 30.11.23 to add new collection with document and fields
+  Future<void> addNewCollectionWithDocument() async {
+    final CollectionReference collectionRef =
+    FirebaseFirestore.instance.collection('AdminToken');
+
+    final Map<String, dynamic> newData = {
+      'token': 'aaa', // Replace 'your_token_value' with the actual token value
+    };
+
+    // Add a new document with the specified data
+    await collectionRef.add(newData);
+  }
+
+//todo:- 30.11.23 get current token value in collection
+  Future<void> getDocumentIDsAndData() async {
+    final CollectionReference collectionRef =
+    FirebaseFirestore.instance.collection('AdminToken');
+
+    // Get the documents in the collection
+    QuerySnapshot querySnapshot = await collectionRef.get();
+
+    // Iterate through the documents in the snapshot
+    for (QueryDocumentSnapshot documentSnapshot in querySnapshot.docs) {
+      // Access the document ID
+      String documentID = documentSnapshot.id;
+
+      // Access the document data as a Map
+      Map<String, dynamic> documentData =
+      documentSnapshot.data() as Map<String, dynamic>;
+
+      // Access the value of the field (assuming there's only one field)
+      dynamic fieldValue = documentData['token'];
+
+      // Print the document ID and field value
+      print('Document ID: $documentID, Token Value: $fieldValue');
+    }
+  }
+
+  //todo:- 30.11.23 update new value to admin token
+  Future<void> updateAdminToken(String getNewToken) async {
+    try {
+      QuerySnapshot snapshot = await _collectionRefToken!.limit(1).get();
+      if (snapshot.docs.isNotEmpty) {
+        String documentId = snapshot.docs.first.id;
+        await _collectionRefToken!.doc(documentId).update({
+          'token': getNewToken,
+        });
+      } else {
+        // Handle the case where no document is found
+        print('No document found to update');
+      }
+    } catch (e) {
+      // Handle the error when updating the admin token
+      print('Error updating admin token: $e');
+      // You might want to throw an exception or handle the error in some way
+    }
+  }
+
 
   Future<void> _handleRefresh() async {
     // isRefreshIndicator = true;
@@ -2660,22 +2894,7 @@ class _BudgetCopyWidgetState extends ConsumerState<BudgetCopyWidget> {
     ref.read(getListItemProvider.notifier).state = newDataList;
   }
 
-  // void onChangedText() {
-  //   String searchQuery =
-  //       ref.read(adminDashListProvider.notifier).txtSearch.text.toLowerCase();
-  //
-  //   List<User2>? originalDataList =
-  //       ref.read(getListItemProvider.notifier).state;
-  //
-  //   if (originalDataList != null) {
-  //     newDataList = originalDataList
-  //         .where((i) =>
-  //             jsonEncode(i).toString().toLowerCase().contains(searchQuery))
-  //         .toList();
-  //
-  //     ref.read(getListItemProvider.notifier).state = newDataList;
-  //   }
-  // }
+
 }
 
 class ImageClipper extends CustomClipper<Path> {
@@ -2728,4 +2947,11 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         minHeight != oldDelegate.minHeight ||
         child != oldDelegate.child;
   }
+}
+
+class Response {
+  int? statusCode;
+  var resBody;
+
+  Response(this.statusCode, this.resBody);
 }

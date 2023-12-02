@@ -1,5 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
+// import 'dart:html';
+import 'dart:io';
 import 'package:rxdart/rxdart.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -10,11 +12,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:maaakanmoney/pages/splash/SplashScreen.dart';
 import 'package:sizer/sizer.dart';
 import 'package:upgrader/upgrader.dart';
+import 'components/constants.dart';
 import 'firebase_options.dart';
 import 'flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/internationalization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 
 final _messageStreamController = BehaviorSubject<RemoteMessage>();
 
@@ -35,11 +37,11 @@ void main() async {
 
   await Upgrader.clearSavedSettings();
 
-
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
-  await Firebase.initializeApp( // todo cloud msg
+  await Firebase.initializeApp(
+    // todo cloud msg
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
@@ -47,37 +49,48 @@ void main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  final settings = await messaging.requestPermission(
-    alert: true,
-    announcement: false,
-    badge: true,
-    carPlay: false,
-    criticalAlert: false,
-    provisional: false,
-    sound: true,
-  );
+  //todo:- 22.9.23 ,as of now, configuration to get push notification is setup only for android platform
+  if (Platform.isAndroid) {
+    //todo:- 19.9.23, notification subscription, which device can receive notification
+    messaging.subscribeToTopic('all').then((_) {
+      print('Subscribed to "all" topic');
+    }).catchError((error) {
+      print('Error subscribing to "all" topic: $error');
+    });
 
-  if (kDebugMode) {
-    print('Permission granted: ${settings.authorizationStatus}');
-  }
+    final settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
 
-  String? token = await messaging.getToken();
-
-  if (kDebugMode) {
-    print('Registration Token=$token');
-  }
-  // todo token from FCM
-  // dAzrpQk0Ta-EdorIC32lLX:APA91bGLNylTsMm07qYgVhUFN0EvPJsy1ozPwWZCMBQWadzlp_hqAbmlfncDYHjZ5hmr4KCtPP4gqcVqQoasIvtA4ZaaH9z7OcXy9PxPTqjA3VULRMhKoGz1RVh4Esr_Uypx55L8kYfA
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     if (kDebugMode) {
-      print('Handling a foreground message: ${message.messageId}');
-      print('Message data: ${message.data}');
-      print('Message notification: ${message.notification?.title}');
-      print('Message notification: ${message.notification?.body}');
+      print('Permission granted: ${settings.authorizationStatus}');
     }
 
-    _messageStreamController.sink.add(message);
-  });
+    String? token = await messaging.getToken();
+    Constants.adminDeviceToken = token ?? "";
+
+    if (kDebugMode) {
+      print('Registration Token=$token');
+    }
+    // todo token from FCM
+    // dAzrpQk0Ta-EdorIC32lLX:APA91bGLNylTsMm07qYgVhUFN0EvPJsy1ozPwWZCMBQWadzlp_hqAbmlfncDYHjZ5hmr4KCtPP4gqcVqQoasIvtA4ZaaH9z7OcXy9PxPTqjA3VULRMhKoGz1RVh4Esr_Uypx55L8kYfA
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (kDebugMode) {
+        print('Handling a foreground message: ${message.messageId}');
+        print('Message data: ${message.data}');
+        print('Message notification: ${message.notification?.title}');
+        print('Message notification: ${message.notification?.body}');
+      }
+
+      _messageStreamController.sink.add(message);
+    });
+  }
 
   await FlutterFlowTheme.initialize();
   await FFLocalizations.initialize();

@@ -39,14 +39,18 @@ abstract class FlutterFlowTheme {
 
   late Color primary;
   late Color secondary;
+  late Color primary1;
+  late Color secondary1;
+  late Color primary2;
+  late Color secondary2;
   late Color tertiary;
   late Color alternate;
   late Color primaryText;
   late Color secondaryText;
   late Color primaryBackground;
   late Color secondaryBackground;
-  late Color accent1;
-  late Color accent2;
+  late Color deposite;
+  late Color withdrawal;
   late Color accent3;
   late Color accent4;
   late Color success;
@@ -128,16 +132,22 @@ class LightModeTheme extends FlutterFlowTheme {
   @Deprecated('Use tertiary instead')
   Color get tertiaryColor => tertiary;
   //todo: const Color(0xFF0B4D40); last app color
-  late Color primary = const Color(0xFF101213);
-  late Color secondary = const Color(0xFF4CAF50);
+
+  // late Color primary = const Color(0xFF101213);
+  late Color primary = const Color(0xFF001B48);
+  late Color secondary = const Color(0xFFFFFFFF);
+  late Color primary1 = const Color(0xFF001B48);
+  late Color primary2 = const Color(0xFF018ABE);
+  late Color secondary1 = const Color(0xFF018ABE);
+  late Color secondary2 = const Color(0xFF97CADB);
   late Color tertiary = const Color(0xFFEE8B60);
   late Color alternate = const Color(0xFFFF5963);
   late Color primaryText = const Color(0xFFFFFFFF);
   late Color secondaryText = const Color(0xFF95A1AC);
   late Color primaryBackground = const Color(0xFF101213);
   late Color secondaryBackground = const Color(0xFF1A1F24);
-  late Color accent1 = const Color(0xFFEEEEEE);
-  late Color accent2 = const Color(0xFFE0E0E0);
+  late Color deposite = const Color(0xFF2CA900);
+  late Color withdrawal = const Color(0xFFBF1A0F);
   late Color accent3 = const Color(0xFF757575);
   late Color accent4 = const Color(0xFF616161);
   late Color success = const Color(0xFF04A24C);
@@ -187,104 +197,104 @@ class ThemeTypography extends Typography {
 
   final FlutterFlowTheme theme;
 
-  String get displayLargeFamily => 'Poppins';
+  String get displayLargeFamily => 'Outfit';
   TextStyle get displayLarge => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 57.0,
       );
-  String get displayMediumFamily => 'Poppins';
+  String get displayMediumFamily => 'Outfit';
   TextStyle get displayMedium => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 45.0,
       );
-  String get displaySmallFamily => 'Poppins';
+  String get displaySmallFamily => 'Outfit';
   TextStyle get displaySmall => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 36.0,
       );
-  String get headlineLargeFamily => 'Poppins';
+  String get headlineLargeFamily => 'Outfit';
   TextStyle get headlineLarge => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 32.0,
       );
-  String get headlineMediumFamily => 'Poppins';
+  String get headlineMediumFamily => 'Outfit';
   TextStyle get headlineMedium => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 28.0,
       );
-  String get headlineSmallFamily => 'Poppins';
+  String get headlineSmallFamily => 'Outfit';
   TextStyle get headlineSmall => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 24.0,
       );
-  String get titleLargeFamily => 'Poppins';
+  String get titleLargeFamily => 'Outfit';
   TextStyle get titleLarge => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.w500,
         fontSize: 22.0,
       );
-  String get titleMediumFamily => 'Poppins';
+  String get titleMediumFamily => 'Outfit';
   TextStyle get titleMedium => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.w500,
         fontSize: 16.0,
       );
-  String get titleSmallFamily => 'Poppins';
+  String get titleSmallFamily => 'Outfit';
   TextStyle get titleSmall => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.w500,
         fontSize: 14.0,
       );
-  String get labelLargeFamily => 'Poppins';
+  String get labelLargeFamily => 'Outfit';
   TextStyle get labelLarge => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.w500,
         fontSize: 14.0,
       );
-  String get labelMediumFamily => 'Poppins';
-  TextStyle get labelMedium => GoogleFonts.getFont('Poppins',
+  String get labelMediumFamily => 'Outfit';
+  TextStyle get labelMedium => GoogleFonts.getFont('Outfit',
       color: theme.primaryText,
       fontWeight: FontWeight.w500,
       fontSize: 13.0,
       letterSpacing: 1);
-  String get labelSmallFamily => 'Poppins';
+  String get labelSmallFamily => 'Outfit';
   TextStyle get labelSmall => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.w500,
         fontSize: 11.0,
       );
-  String get bodyLargeFamily => 'Poppins';
-  TextStyle get bodyLarge => GoogleFonts.getFont('Poppins',
+  String get bodyLargeFamily => 'Outfit';
+  TextStyle get bodyLarge => GoogleFonts.getFont('Outfit',
       color: theme.primaryText,
       fontWeight: FontWeight.normal,
       fontSize: 16.0,
       letterSpacing: 0.5);
-  String get bodyMediumFamily => 'Poppins';
+  String get bodyMediumFamily => 'Outfit';
   TextStyle get bodyMedium => GoogleFonts.getFont(
-        'Poppins',
+        'Outfit',
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 14.0,
       );
-  String get bodySmallFamily => 'Poppins';
-  TextStyle get bodySmall => GoogleFonts.getFont('Poppins',
+  String get bodySmallFamily => 'Outfit';
+  TextStyle get bodySmall => GoogleFonts.getFont('Outfit',
       color: theme.primaryText,
       fontWeight: FontWeight.normal,
       fontSize: 12.0,
@@ -303,6 +313,10 @@ class DarkModeTheme extends FlutterFlowTheme {
   // late Color secondary = const Color(0xFF39D2C0);
   //todo:- const Color(0xFF0B4D40); //last final app color
   late Color primary = const Color(0xFF101213);
+  late Color primary1 = const Color(0xFF001B48);
+  late Color primary2 = const Color(0xFF001B48);
+  late Color secondary1 = const Color(0xFF018ABE);
+  late Color secondary2 = const Color(0xFF018ABE);
   late Color secondary = const Color(0xFF4CAF50);
   late Color tertiary = const Color(0xFFEE8B60);
   late Color alternate = const Color(0xFFFF5963);
@@ -310,8 +324,8 @@ class DarkModeTheme extends FlutterFlowTheme {
   late Color secondaryText = const Color(0xFF95A1AC);
   late Color primaryBackground = const Color(0xFF101213);
   late Color secondaryBackground = const Color(0xFF1A1F24);
-  late Color accent1 = const Color(0xFFEEEEEE);
-  late Color accent2 = const Color(0xFFE0E0E0);
+  late Color deposite = const Color(0xFF2CA900);
+  late Color withdrawal = const Color(0xFFBF1A0F);
   late Color accent3 = const Color(0xFF757575);
   late Color accent4 = const Color(0xFF616161);
   late Color success = const Color(0xFF04A24C);

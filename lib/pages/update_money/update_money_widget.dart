@@ -1,5 +1,7 @@
 // ignore_for_file: must_be_immutable, sort_child_properties_last, prefer_const_constructors, deprecated_member_use_from_same_package
 
+import 'dart:math';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -53,6 +55,8 @@ class _UpdateMoneyWidgetState extends ConsumerState<UpdateMoneyWidget> {
   double interestPercent = 1;
   CollectionReference? _collectionReference;
   CollectionReference? _collectionUsers;
+  bool swtchMaxIntReached = false;
+  bool isMaxIntReached = false;
 
   ConnectivityResult? data;
 
@@ -125,7 +129,7 @@ class _UpdateMoneyWidgetState extends ConsumerState<UpdateMoneyWidget> {
                               style: FlutterFlowTheme.of(context)
                                   .titleLarge
                                   .override(
-                                      fontFamily: 'Poppins',
+                                      fontFamily: 'Outfit',
                                       color: isDepositSelected
                                           ? Colors.white
                                           : Colors.black,
@@ -139,7 +143,7 @@ class _UpdateMoneyWidgetState extends ConsumerState<UpdateMoneyWidget> {
                             style: FlutterFlowTheme.of(context)
                                 .titleLarge
                                 .override(
-                                    fontFamily: 'Poppins',
+                                    fontFamily: 'Outfit',
                                     color: isDepositSelected
                                         ? Colors.black
                                         : Colors.white,
@@ -196,6 +200,64 @@ class _UpdateMoneyWidgetState extends ConsumerState<UpdateMoneyWidget> {
                           ),
                         ),
                       ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 50.0, right: 0.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Is maximum interest is reached?',
+                              style: TextStyle(),
+                            ),
+                          ),
+                          Switch(
+                            value: swtchMaxIntReached,
+                            onChanged: (value) {
+                              if (!swtchMaxIntReached) {
+                                showDialog(
+                                    barrierDismissible: false,
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      // setState(() {
+                                      //   _isLoading = false;
+                                      // });
+                                      return CustomDialogBox(
+                                        title: "Message!",
+                                        descriptions:
+                                            "Are you sure, is Maximum interest Reached?",
+                                        text: "yes",
+                                        isCancel: false,
+                                        isNo: true,
+                                        onNoTap: () {
+                                          setState(() {
+                                            swtchMaxIntReached = false;
+                                            isMaxIntReached = false;
+                                          });
+                                          Navigator.pop(context);
+                                        },
+                                        onTap: () {
+                                          setState(() {
+                                            isMaxIntReached = value;
+                                          });
+                                          Navigator.pop(context);
+                                        },
+                                      );
+                                    });
+                              }
+
+                              if (swtchMaxIntReached) {
+                                isMaxIntReached = false;
+                              }
+
+                              setState(() {
+                                swtchMaxIntReached = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     Padding(
                       padding:
@@ -619,7 +681,8 @@ class _UpdateMoneyWidgetState extends ConsumerState<UpdateMoneyWidget> {
           // await Future.delayed(Duration(seconds: 2));
 
           double? getInterest = 0.0;
-
+          //todo:-25.9.23 adding random interest between 0.5% to 1% interest for each transaction
+          interestPercent = await generateRandomInterest();
           if (isDepositSelected!) {
             getInterest =
                 await calculateInterest(amount!.toDouble(), interestPercent);
@@ -647,6 +710,8 @@ class _UpdateMoneyWidgetState extends ConsumerState<UpdateMoneyWidget> {
               setState(() {
                 txtAmount.text = "";
                 _isLoading = false;
+                swtchMaxIntReached = false;
+                isMaxIntReached = false;
               });
 
               Constants.showToast(
@@ -1000,6 +1065,13 @@ class _UpdateMoneyWidgetState extends ConsumerState<UpdateMoneyWidget> {
     }
   }
 
+  Future<double> generateRandomInterest() async {
+    final random = Random();
+    double interest = (random.nextInt(21) + 10) /
+        100; // Generates a random interest between 0.1% and 0.3%
+    return interest;
+  }
+
   Future<void> updateAdminDetails(Map<String, dynamic> newData) async {
     QuerySnapshot snapshot = await _collectionReference!.limit(1).get();
     if (snapshot.docs.isNotEmpty) {
@@ -1048,6 +1120,10 @@ class _UpdateMoneyWidgetState extends ConsumerState<UpdateMoneyWidget> {
 
   Future<double?> calculateInterest(double value, double interestPercent) {
     if (value > 100) {
+      return Future.value(0.0);
+    }
+
+    if (isMaxIntReached) {
       return Future.value(0.0);
     }
 

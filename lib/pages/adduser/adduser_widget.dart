@@ -1,13 +1,17 @@
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:maaakanmoney/components/constants.dart';
 import 'package:maaakanmoney/components/custom_dialog_box.dart';
 import 'package:maaakanmoney/pages/budget_copy/budget_copy_widget.dart';
 import 'package:maaakanmoney/phoneController.dart';
+import 'package:tuple/tuple.dart';
 
+import '../../components/ListView/ListController.dart';
+import '../../components/ListView/ListPageView.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -38,8 +42,9 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
   // State field(s) for city widget.
   TextEditingController? txtMobileNo;
   String? Function(BuildContext, String?)? cityController2Validator;
-
+  List<Tuple2<String?, String?>?> adminType = [];
   ConnectivityResult? data;
+  Tuple2<String?, String?>? getSelectedAdmin = Tuple2("", "");
 
   /// Initialization and disposal methods.
 
@@ -48,7 +53,13 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
     txtUserName ??= TextEditingController();
     txtMobileNo ??= TextEditingController();
     txtphneName ??= TextEditingController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+    SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
+      ref.read(ListProvider.notifier).txtAdminType?.text = "";
+    });
+    adminType = [
+      Tuple2("Meena", "1"),
+      Tuple2("Babu", "2"),
+    ];
   }
 
   @override
@@ -78,7 +89,7 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                     '3usdhnov' /* Add user */,
                   ),
                   style: FlutterFlowTheme.of(context).bodyMedium.override(
-                        fontFamily: 'Poppins',
+                        fontFamily: 'Outfit',
                         color: FlutterFlowTheme.of(context).primaryBtnText,
                         fontSize: 18.0,
                       ),
@@ -117,12 +128,12 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                             width: 100.0,
                             height: 100.0,
                             decoration: const BoxDecoration(
-                              color: Color(0xFFE0E3E7),
+                              color: Colors.blueGrey,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.person,
-                              color: Colors.black,
+                              color: Colors.white,
                               size: 50.0,
                             ),
                           ),
@@ -133,11 +144,9 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                       padding: const EdgeInsetsDirectional.fromSTEB(
                           0.0, 0.0, 0.0, 10.0),
                       child: Text(
-                        FFLocalizations.of(context).getText(
-                          'uzh1m0n9' /* MM00026 */,
-                        ),
+                        "New User",
                         style: FlutterFlowTheme.of(context).labelLarge.override(
-                              fontFamily: 'Poppins',
+                              fontFamily: 'Outfit',
                               color: const Color(0xFF049A50),
                               fontSize: 16.0,
                             ),
@@ -156,14 +165,14 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                           ),
                           labelStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
-                                    fontFamily: 'Poppins',
+                                    fontFamily: 'Outfit',
                                     color: const Color(0xFF57636C),
                                     fontSize: 14.0,
                                     fontWeight: FontWeight.normal,
                                   ),
                           hintStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
-                                    fontFamily: 'Poppins',
+                                    fontFamily: 'Outfit',
                                     color: const Color(0xFF57636C),
                                     fontSize: 14.0,
                                     fontWeight: FontWeight.normal,
@@ -202,7 +211,7 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                               20.0, 24.0, 0.0, 24.0),
                         ),
                         style: FlutterFlowTheme.of(context).bodyMedium.override(
-                              fontFamily: 'Poppins',
+                              fontFamily: 'Outfit',
                               color: const Color(0xFF14181B),
                               fontSize: 14.0,
                               fontWeight: FontWeight.normal,
@@ -228,14 +237,14 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                           ),
                           labelStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
-                                    fontFamily: 'Poppins',
+                                    fontFamily: 'Outfit',
                                     color: const Color(0xFF57636C),
                                     fontSize: 14.0,
                                     fontWeight: FontWeight.normal,
                                   ),
                           hintStyle:
                               FlutterFlowTheme.of(context).labelMedium.override(
-                                    fontFamily: 'Poppins',
+                                    fontFamily: 'Outfit',
                                     color: const Color(0xFF57636C),
                                     fontSize: 14.0,
                                     fontWeight: FontWeight.normal,
@@ -275,7 +284,7 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                         ),
                         maxLength: 10,
                         style: FlutterFlowTheme.of(context).bodyMedium.override(
-                              fontFamily: 'Poppins',
+                              fontFamily: 'Outfit',
                               color: const Color(0xFF14181B),
                               fontSize: 14.0,
                               fontWeight: FontWeight.normal,
@@ -286,6 +295,98 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                         validator: _validatePhoneNumber,
                         onSaved: (value) => _phoneNumber = value,
                       ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        ref.read(ListProvider.notifier).getData = adminType;
+                        ref.read(ListProvider.notifier).getSelectionType =
+                            SelectionType.adminType;
+
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ListViewBuilder(
+                                      getListHeading: "Map User to Admin",
+                                      getIndex: null,
+                                    )));
+                      },
+                      child: Consumer(builder: (context, ref, child) {
+                        getSelectedAdmin = ref.watch(adminTypeProvider);
+
+                        return Padding(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
+                              20.0, 10.0, 20.0, 16.0),
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 10),
+                                  child: Text(
+                                    "Mapped Admin",
+                                    style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w400,
+                                        letterSpacing: 1),
+                                    maxLines: 2,
+                                    softWrap: false,
+                                    overflow: TextOverflow.fade,
+                                    textAlign: TextAlign.justify,
+                                  ),
+                                ),
+                                Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(5.0),
+                                          child: Container(
+                                            height: 50,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  left: 10.0),
+                                              child: TextFormField(
+                                                enabled: false,
+                                                keyboardType:
+                                                    TextInputType.none,
+                                                controller: ref
+                                                    .read(ListProvider.notifier)
+                                                    .txtAdminType,
+                                                focusNode: ref
+                                                    .read(ListProvider.notifier)
+                                                    .focusAdminType,
+                                                textCapitalization:
+                                                    TextCapitalization.words,
+                                                decoration: const InputDecoration(
+                                                    // labelText: data.success![1][index].item2!,
+                                                    suffixIcon: Icon(
+                                                      Icons.navigate_next,
+                                                      color: Color.fromARGB(
+                                                          125, 1, 2, 2),
+                                                    ),
+                                                    border: InputBorder.none),
+                                                style: const TextStyle(
+                                                    letterSpacing: 1),
+
+                                                // keyboardType:
+                                                //     TextInputType
+                                                //         .text,
+                                                validator: _validateMappedAdmin,
+                                              ),
+                                            ),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                  color: Colors.grey),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ]),
+                              ]),
+                        );
+                      }),
                     ),
                     Align(
                       alignment: const AlignmentDirectional(0.0, 0.05),
@@ -308,7 +409,7 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                             textStyle: FlutterFlowTheme.of(context)
                                 .titleMedium
                                 .override(
-                                  fontFamily: 'Poppins',
+                                  fontFamily: 'Outfit',
                                   color: Colors.white,
                                   fontSize: 18.0,
                                   fontWeight: FontWeight.normal,
@@ -331,7 +432,7 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
                           'l3nh6fz4' /* User will receive an SMS with ... */,
                         ),
                         style: FlutterFlowTheme.of(context).labelLarge.override(
-                              fontFamily: 'Poppins',
+                              fontFamily: 'Outfit',
                               color: const Color(0xFF049A50),
                               fontSize: 13.0,
                             ),
@@ -351,7 +452,13 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
   void AddUser(
     String? getName,
     String? getMobile,
+    String? getAdminId,
   ) {
+    if (getAdminId == "" || getAdminId == null) {
+      Constants.showToast("Please map user to Admin", ToastGravity.BOTTOM);
+      return;
+    }
+
     String documentId = fireStore.collection('users').doc().id;
     int? randomCode = generateRandomCode();
 
@@ -365,17 +472,21 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
       'requestAmnt': 0.0,
       'totalCredit': 0.0,
       'totalDebit': 0.0,
-      'netTotal': 0.0,
+      // 'netTotal': 0.0, //not
       'totalIntCredit': 0.0,
       'totalIntDebit': 0.0,
-      'netIntTotal': 0.0,
+      // 'netIntTotal': 0.0, //not
       'securityCode': randomCode ?? 000000,
       'isCashbackRequest': false,
       'requestCashbckAmnt': 0.0,
+      'mappedAdmin': getAdminId,
+      'isCanMoneyReq': false,
+      'isCanCashbackReq': false,
     }).then((value) {
       setState(() {
         txtUserName.text = "";
         txtMobileNo.text = "";
+        ref.read(ListProvider.notifier).txtAdminType.text = "";
       });
 
       Constants.showToast("User Added Successfully", ToastGravity.BOTTOM);
@@ -411,7 +522,8 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
       bool isNewCust = await isNewUser("+91" + txtMobileNo.text);
 
       if (isNewCust) {
-        AddUser(txtUserName.text, "+91" + txtMobileNo.text);
+        AddUser(txtUserName.text, "+91" + txtMobileNo.text,
+            getSelectedAdmin?.item2 ?? "");
       } else {
         showDialog(
             barrierDismissible: false,
@@ -451,6 +563,15 @@ class _AdduserWidgetState extends ConsumerState<AdduserWidget> {
     if (!RegExp(r'^\d{10}$').hasMatch(value)) {
       return 'Please enter a valid 10-digit phone number';
     }
+    return null;
+  }
+
+  String? _validateMappedAdmin(String? value) {
+    if (value == null || value.isEmpty) {
+      Constants.showToast("Please map user to Admin", ToastGravity.BOTTOM);
+      return 'Please map user to Admin';
+    }
+
     return null;
   }
 }

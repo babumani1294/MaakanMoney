@@ -38,8 +38,11 @@ class DashListNotifier extends StateNotifier<UserDashListState> {
   double? getLastCashbckReqAmount;
   bool? getIsMoneyReq;
   bool? getIsCashbckReq;
+  bool? getIsCanMoneyReq;
+  bool? getIsCanCashbckReq;
   String? getDocId;
   bool isNotificationByAdmin = false;
+  String? getAdminType = "";
 
   DateTime? startDate;
   DateTime? endDate;
@@ -57,6 +60,36 @@ class DashListNotifier extends StateNotifier<UserDashListState> {
     transList = await getUserTransactions(getMobile);
     cashBackList = await getUserCashbckTransactions(getMobile);
     state = getSuccessState(transList);
+  }
+
+  //todo:- 4.10.23 Helper function to group transactions by date
+  Map<String, List<Transaction>> groupTransactionsByDate(
+      List<Transaction> transactions) {
+    final groupedTransactions = <String, List<Transaction>>{};
+    for (final transaction in transactions) {
+      final date =
+          transaction.date.toString(); // Assuming date is stored as a string
+      if (groupedTransactions[date] == null) {
+        groupedTransactions[date] = [];
+      }
+      groupedTransactions[date]?.add(transaction);
+    }
+    return groupedTransactions;
+  }
+
+  //todo:- 4.10.23 Helper function to group transactions by date for cashback
+  Map<String, List<Cashbacks>> groupTransactionsByDate1(
+      List<Cashbacks> transactions) {
+    final groupedTransactions = <String, List<Cashbacks>>{};
+    for (final transaction in transactions) {
+      final date =
+          transaction.date.toString(); // Assuming date is stored as a string
+      if (groupedTransactions[date] == null) {
+        groupedTransactions[date] = [];
+      }
+      groupedTransactions[date]?.add(transaction);
+    }
+    return groupedTransactions;
   }
 
   Future<List<Transaction>> getUserTransactions(String? getMobile) async {
@@ -296,16 +329,28 @@ class DashListNotifier extends StateNotifier<UserDashListState> {
     getLastCashbckReqAmount = user?['requestCashbckAmnt'] ?? "";
     getIsMoneyReq = user?['isMoneyRequest'] ?? "";
     getIsCashbckReq = user?['isCashbackRequest'] ?? "";
+
+    getIsCanMoneyReq = user?['isCanMoneyReq'] ?? "";
+    getIsCanCashbckReq = user?['isCanCashbackReq'] ?? "";
+
     getDocId = querySnapshot.docs.first.id;
     isNotificationByAdmin = user?['notificationByAdmin'] ?? "";
+    getAdminType = user?['mappedAdmin'] ?? "";
     ref.read(txtPaidStatus.notifier).state = getIsMoneyReq;
     ref.read(txtCashbckPaidStatus.notifier).state = getIsCashbckReq;
+
+    ref.read(txtMoneyReqCanStatus.notifier).state = getIsCanMoneyReq;
+    ref.read(txtCashbckReqCanStatus.notifier).state = getIsCanCashbckReq;
 
     return getUser;
   }
 
-  Future<bool?> updateData(bool? isMoneyReq, double? getReqAmount,
-      String? getDocId, String? getMobile) async {
+  Future<bool?> updateData(
+      bool? isMoneyReq,
+      double? getReqAmount,
+      String? getDocId,
+      String? getMobile,
+      TextEditingController? getText) async {
     String? documentId = getDocId;
 
     if (data == ConnectivityResult.none) {
@@ -318,9 +363,54 @@ class DashListNotifier extends StateNotifier<UserDashListState> {
         await firestore.collection('users').doc(documentId).update({
           'isMoneyRequest': true,
           'requestAmnt': getReqAmount,
+          'isCanMoneyReq': false,
         }).then((value) {
+          getText?.text = "";
           Constants.showToast(
               "Money Requested Successfully", ToastGravity.CENTER);
+          getUserDetails(getMobile);
+          return true;
+        });
+        return null; // Return null or a success message if desired
+      } catch (error) {
+        getText?.text = "";
+        Constants.showToast("Request Failed, Try again!", ToastGravity.CENTER);
+        return false; // Return the error message as a string
+      }
+    } else {
+      try {
+        await firestore.collection('users').doc(documentId).update({
+          'isCashbackRequest': true,
+          'requestCashbckAmnt': getReqAmount,
+          'isCanCashbackReq': false,
+        }).then((value) {
+          getText?.text = "";
+          Constants.showToast(
+              "Money Requested Successfully", ToastGravity.CENTER);
+          getUserDetails(getMobile);
+          return true;
+        });
+        return null; // Return null or a success message if desired
+      } catch (error) {
+        getText?.text = "";
+        Constants.showToast("Request Failed, Try again!", ToastGravity.CENTER);
+        return false; // Return the error message as a string
+      }
+    }
+  }
+
+  Future<bool?> canclRequest(
+      String? getDocId, bool? isSavingAmntReqPaid, String? getMobile) async {
+    String? documentId = getDocId;
+
+    if (isSavingAmntReqPaid!) {
+      try {
+        await firestore.collection('users').doc(documentId).update({
+          'isMoneyRequest': false,
+          'isCanMoneyReq': true,
+        }).then((value) {
+          Constants.showToast(
+              "Money Request Cancelled Successfully", ToastGravity.CENTER);
           getUserDetails(getMobile);
           return true;
         });
@@ -332,11 +422,11 @@ class DashListNotifier extends StateNotifier<UserDashListState> {
     } else {
       try {
         await firestore.collection('users').doc(documentId).update({
-          'isCashbackRequest': true,
-          'requestCashbckAmnt': getReqAmount,
+          'isCashbackRequest': false,
+          'isCanCashbackReq': true,
         }).then((value) {
           Constants.showToast(
-              "Money Requested Successfully", ToastGravity.CENTER);
+              "Cashback Request Cancelled Successfully", ToastGravity.CENTER);
           getUserDetails(getMobile);
           return true;
         });
@@ -408,5 +498,9 @@ class Cashbacks {
 
 var txtPaidStatus = StateProvider<bool?>((ref) => false);
 var txtCashbckPaidStatus = StateProvider<bool?>((ref) => false);
+
+var txtMoneyReqCanStatus = StateProvider<bool?>((ref) => false);
+var txtCashbckReqCanStatus = StateProvider<bool?>((ref) => false);
+
 // final isMsgByAdmin =
 //     StateProvider<Tuple2<bool?, String?>>((ref) => Tuple2(false, ""));

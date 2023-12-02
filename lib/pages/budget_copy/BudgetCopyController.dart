@@ -80,51 +80,7 @@ class DashListNotifier extends StateNotifier<AdminDashState2> {
     state = getSuccessState(userList2, transList);
   }
 
-  // Future<void> getHeaderDetails() async {
-  //   // Map<String, dynamic> newAdminData = {};
-  //   // CollectionReference? _collectionReference;
-  //   // _collectionReference =
-  //   //     FirebaseFirestore.instance.collection('adminDetails');
-  //   // QuerySnapshot snapshot = await _collectionReference!.limit(1).get();
-  //   //
-  //   // newAdminData = {
-  //   //   'totalCredit': 43366.0,
-  //   //   'totalDebit': 28924.0,
-  //   // };
-  //   //
-  //   // if (snapshot.docs.isNotEmpty) {
-  //   //   String documentId = snapshot.docs.first.id;
-  //   //   await _collectionReference!.doc(documentId).update(newAdminData);
-  //   // }
-  //
-  //   QuerySnapshot adminSnapshot =
-  //       await FirebaseFirestore.instance.collection('adminDetails').get();
-  //
-  //   await Future.forEach(adminSnapshot.docs, (doc) async {
-  //     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-  //
-  //     admnTtlCredit = data['totalCredit'];
-  //     admnTtlDebit = data['totalDebit'];
-  //     admnTtlIntCredit = data['totalIntCredit'];
-  //     admnTtlIntDebit = data['totalIntDebit'];
-  //     ref.read(getCredit.notifier).state = Tuple6(admnTtlCredit, admnTtlDebit,
-  //         0.0, admnTtlIntCredit, admnTtlIntDebit, 0.0);
-  //   });
-  //
-  //   if (adminSnapshot.docs.isNotEmpty) {
-  //     Map<String, dynamic> data =
-  //         adminSnapshot.docs[0].data() as Map<String, dynamic>;
-  //
-  //     admnTtlCredit = data['totalCredit'];
-  //     admnTtlDebit = data['totalDebit'];
-  //     admnTtlIntCredit = data['totalIntCredit'];
-  //     admnTtlIntDebit = data['totalIntDebit'];
-  //
-  //     totalNet = admnTtlCredit! - admnTtlDebit!;
-  //
-  //     totalNetInt = admnTtlIntCredit! - admnTtlIntDebit!;
-  //   }
-  // }
+
 
   Future<List<User2>> fetchUsersList2() async {
     QuerySnapshot userSnapshot =
@@ -187,6 +143,7 @@ class DashListNotifier extends StateNotifier<AdminDashState2> {
           getSecurityCode: data['securityCode'],
           isCashBackRequest: data['isCashbackRequest'],
           requestCashbckAmount: data['requestCashbckAmnt'],
+          getAdminType: data['mappedAdmin'],
         );
         moneyRequestUsers2?.add(user);
       }
@@ -212,6 +169,7 @@ class DashListNotifier extends StateNotifier<AdminDashState2> {
           getSecurityCode: data['securityCode'],
           isCashBackRequest: data['isCashbackRequest'],
           requestCashbckAmount: data['requestCashbckAmnt'],
+          getAdminType: data['mappedAdmin'],
         );
         cashBckRequestUsers2?.add(user);
       }
@@ -243,6 +201,7 @@ class DashListNotifier extends StateNotifier<AdminDashState2> {
           getSecurityCode: data['securityCode'],
           isCashBackRequest: data['isCashbackRequest'],
           requestCashbckAmount: data['requestCashbckAmnt'],
+          getAdminType: data['mappedAdmin'],
         );
         notifications?.add(user);
       }
@@ -264,6 +223,7 @@ class DashListNotifier extends StateNotifier<AdminDashState2> {
         getSecurityCode: data['securityCode'],
         isCashBackRequest: data['isCashbackRequest'],
         requestCashbckAmount: data['requestCashbckAmnt'],
+        getAdminType: data['mappedAdmin'],
       );
       users2.add(user);
     });
@@ -298,7 +258,10 @@ class DashListNotifier extends StateNotifier<AdminDashState2> {
       String? enquiryNo = data['mobile'];
 
       EnquiryList enquiry = EnquiryList(
-        mobile: data['mobile'],
+        mobile: data['mobile'] ?? "",
+        enquiryReason: data['enquiryReason'] ?? "",
+        name: data['name'] ?? "",
+        refNumber: data['refNumber'] ?? "",
       );
       enquiryList?.add(enquiry);
 
@@ -456,6 +419,8 @@ class User2 {
   double? totalIntCredit;
   double? totalIntDebit;
   int? getSecurityCode;
+  String? getAdminType;
+
   double? getNetBal() {
     var getTotalCredit = totalCredit;
     var getTotalDebit = totalDebit;
@@ -492,14 +457,21 @@ class User2 {
       required this.totalDebit,
       required this.totalIntCredit,
       required this.totalIntDebit,
-      required this.getSecurityCode});
+      required this.getSecurityCode,
+      required this.getAdminType});
 }
 
 class EnquiryList {
   String? mobile;
+  String? enquiryReason;
+  String? name;
+  String? refNumber;
 
   EnquiryList({
     required this.mobile,
+    required this.enquiryReason,
+    required this.name,
+    required this.refNumber,
   });
 }
 

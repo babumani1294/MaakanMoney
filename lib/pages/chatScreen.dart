@@ -36,7 +36,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: FlutterFlowTheme.of(context).primary,
-        title: Text(widget.userName ?? ""),
+        title: Text(
+          widget.userName ?? "",
+          style: GlobalTextStyles.secondaryText1(
+              textColor: FlutterFlowTheme.of(context).secondary2,
+              txtWeight: FontWeight.w700),
+        ),
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);

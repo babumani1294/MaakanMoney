@@ -1,5 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sizer/sizer.dart';
+
+import '../../flutter_flow/flutter_flow_theme.dart';
+import '../constants.dart';
 
 class ReusableCertificateSection extends StatelessWidget {
   final String? getText;
@@ -27,27 +31,29 @@ class ReusableCertificateSection extends StatelessWidget {
           Stack(
             children: [
               Container(
-                width: 100,
-                height: 70,
+                width: 21.w,
+                height: 7.h,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(width: 1, color: Colors.grey),
+                  color:
+                      FlutterFlowTheme.of(context).secondary2.withOpacity(0.1),
                   borderRadius: BorderRadius.all(
                       Radius.circular(10.0) //         <--- border radius here
                       ),
                 ),
                 child: InkWell(
-                  splashColor: Colors.red, // Splash color
+                  splashColor: FlutterFlowTheme.of(context).secondary1,
                   onTap: onTap,
-                  child: Container(
-                    padding: EdgeInsets.all(15),
-                    child:
-                        Image.asset("images/Icons/UserDashboard/$getImage.png",
-                            errorBuilder: (context, exception, stackTrace) {
-                      return Image.asset(
-                        "images/Icons/DocumentUpload/PhotoSection/defaultCertificate.png",
-                      );
-                    }),
+                  child: Center(
+                    child: Container(
+                      height: 30,
+                      width: 30,
+                      child: Image.asset("images/final/Dashboard/$getImage.png",
+                          errorBuilder: (context, exception, stackTrace) {
+                        return Image.asset(
+                          "images/final/Common/Error.png",
+                        );
+                      }),
+                    ),
                   ),
                 ),
               ),
@@ -60,10 +66,10 @@ class ReusableCertificateSection extends StatelessWidget {
             textAlign: TextAlign.center,
             getText ?? "",
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 13.0,
-              color: getTextColor ?? Colors.white,
-            ),
+            style: GlobalTextStyles.secondaryText1(
+                txtSize: 13,
+                textColor: getTextColor,
+                txtWeight: FontWeight.bold),
           )
         ],
       ),

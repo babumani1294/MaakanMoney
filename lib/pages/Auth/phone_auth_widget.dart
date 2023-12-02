@@ -1,5 +1,8 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings, use_build_context_synchronously, prefer_function_declarations_over_variables, non_constant_identifier_names, prefer_final_fields, unused_import
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +10,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lottie/lottie.dart';
 import 'package:maaakanmoney/flutter_flow/flutter_flow_theme.dart';
 import 'package:maaakanmoney/flutter_flow/flutter_flow_widgets.dart';
 import 'package:maaakanmoney/pages/User/Userscreen_widget.dart';
@@ -18,7 +22,9 @@ import 'package:sizer/sizer.dart';
 import 'package:tuple/tuple.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 
+import '../../components/NotificationService.dart';
 import '../../components/constants.dart';
 import '../../components/custom_dialog_box.dart';
 
@@ -42,6 +48,7 @@ class _MyPhoneState extends ConsumerState<MyPhone> {
   String? loginKey;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   ConnectivityResult? data;
+  bool? chckBoxIsChecked = false;
 
   bool _agreedToTerms = false;
 
@@ -54,11 +61,6 @@ class _MyPhoneState extends ConsumerState<MyPhone> {
           isPrivacyTapped: isPrivacyPol,
         ),
         transitionsBuilder: (_, animation, __, child) {
-          // return FadeTransition(
-          //   opacity: animation,
-          //   child: child,
-          // );
-
           var scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
             CurvedAnimation(parent: animation, curve: Curves.easeInOut),
           );
@@ -82,6 +84,7 @@ class _MyPhoneState extends ConsumerState<MyPhone> {
   Widget build(BuildContext context) {
     return UpgradeAlert(
       child: Scaffold(
+        backgroundColor: Colors.white,
         body: Stack(
           children: [
             GestureDetector(
@@ -92,124 +95,513 @@ class _MyPhoneState extends ConsumerState<MyPhone> {
                   data = ref.watch(connectivityProvider);
 
                   return Container(
-                    margin: const EdgeInsets.only(left: 25, right: 25),
+                    color: Colors.white,
+                    width: double.infinity,
+                    height: double.infinity,
                     alignment: Alignment.center,
-                    child: SingleChildScrollView(
+                    child: Center(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Image.asset(
-                            'assets/images/img1.png',
-                            width: 150,
-                            height: 150,
-                          ),
-                          const SizedBox(
-                            height: 25,
-                          ),
-                          const Text(
-                            "Phone Verification",
-                            style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1),
-                          ),
-                          const SizedBox(
-                            height: 10,
-                          ),
-                          const Text(
-                            "We need to register your phone \n before getting started!",
-                            style: TextStyle(fontSize: 16, letterSpacing: 1),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(
-                            height: 30,
-                          ),
-                          Container(
-                            height: 55,
-                            decoration: BoxDecoration(
-                                border:
-                                    Border.all(width: 1, color: Colors.grey),
-                                borderRadius: BorderRadius.circular(10)),
+                          Expanded(
+                            flex: 5,
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const SizedBox(
-                                  width: 10,
-                                ),
-                                SizedBox(
-                                  width: 40,
-                                  child: TextField(
-                                    enabled: false,
-                                    controller: countryController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                    ),
-                                  ),
-                                ),
-                                const Text(
-                                  "|",
-                                  style: TextStyle(
-                                    fontSize: 33,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(
-                                  width: 10,
-                                ),
                                 Expanded(
-                                    child: TextFormField(
-                                  enabled: isOtpSent == true ? false : true,
-                                  maxLength: 10,
-                                  controller: PhoneController,
-                                  keyboardType: TextInputType.phone,
-                                  style: const TextStyle(letterSpacing: 1),
-                                  decoration: const InputDecoration(
-                                    counterText: "",
-                                    border: InputBorder.none,
-                                    hintText: "Phone",
-                                  ),
-                                ))
+                                  flex: 1,
+                                  child: Stack(
+                                      alignment: Alignment.bottomLeft,
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: FlutterFlowTheme.of(context)
+                                                .primary1,
+                                            borderRadius: BorderRadius.only(
+                                              bottomLeft: Radius.circular(
+                                                  70), // Bottom-left corner is rounded
+                                            ),
+                                          ),
+                                          child: Stack(
+                                            children: [
+                                              Positioned.fill(
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 50.0, right: 10),
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.topRight,
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment.end,
+                                                      children: [
+                                                        Text(
+                                                          "",
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .normal,
+                                                            letterSpacing: 1,
+                                                            color: FlutterFlowTheme
+                                                                    .of(context)
+                                                                .secondary1,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          Constants.appVersion,
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .normal,
+                                                            letterSpacing: 1,
+                                                            color: FlutterFlowTheme
+                                                                    .of(context)
+                                                                .secondary2,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Add more Positioned widgets for additional images
+                                              ),
+                                              Positioned.fill(
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 50.0, left: 50),
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.topCenter,
+                                                    child: Container(
+                                                      height: 50,
+                                                      width: 50,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(
+                                                                0.2), // Adjust transparency here
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                      ),
+                                                      child: Image.asset(
+                                                        'images/final/Login/LBackdrop1.png',
+                                                        opacity:
+                                                            const AlwaysStoppedAnimation(
+                                                                .5),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Add more Positioned widgets for additional images
+                                              ),
+                                              Positioned.fill(
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          bottom: 50.0,
+                                                          right: 0),
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.bottomRight,
+                                                    child: Container(
+                                                      height: 50,
+                                                      width: 50,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(
+                                                                0.2), // Adjust transparency here
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                      ),
+                                                      child: Image.asset(
+                                                        'images/final/Login/LBackdrop6.png',
+                                                        opacity:
+                                                            const AlwaysStoppedAnimation(
+                                                                .5),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Add more Positioned widgets for additional images
+                                              ),
+                                              Positioned.fill(
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          bottom: 30.0,
+                                                          right: 50),
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.centerRight,
+                                                    child: Container(
+                                                      height: 50,
+                                                      width: 50,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(
+                                                                0.2), // Adjust transparency here
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                      ),
+                                                      child: Image.asset(
+                                                        'images/final/Login/LBackdrop3.png',
+                                                        opacity:
+                                                            const AlwaysStoppedAnimation(
+                                                                .5),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Add more Positioned widgets for additional images
+                                              ),
+                                              Positioned.fill(
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 50.0, right: 30),
+                                                  child: Align(
+                                                    alignment: Alignment.center,
+                                                    child: Container(
+                                                      height: 50,
+                                                      width: 50,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(
+                                                                0.2), // Adjust transparency here
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                      ),
+                                                      child: Image.asset(
+                                                        'images/final/Login/LBackdrop4.png',
+                                                        opacity:
+                                                            const AlwaysStoppedAnimation(
+                                                                .5),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Add more Positioned widgets for additional images
+                                              ),
+                                              Positioned.fill(
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 90.0, left: 70),
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.topLeft,
+                                                    child: Container(
+                                                      height: 50,
+                                                      width: 50,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(
+                                                                0.2), // Adjust transparency here
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                      ),
+                                                      child: Image.asset(
+                                                        'images/final/Login/LBackdrop5.png',
+                                                        opacity:
+                                                            const AlwaysStoppedAnimation(
+                                                                .5),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Add more Positioned widgets for additional images
+                                              ),
+                                              Positioned.fill(
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 50.0, left: 15),
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.centerLeft,
+                                                    child: Container(
+                                                      height: 50,
+                                                      width: 50,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(
+                                                                0.2), // Adjust transparency here
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                      ),
+                                                      child: Image.asset(
+                                                        'images/final/Login/LBackdrop2.png',
+                                                        opacity:
+                                                            const AlwaysStoppedAnimation(
+                                                                .5),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // Add more Positioned widgets for additional images
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 25.0, bottom: 25),
+                                          child: SingleChildScrollView(
+                                            child: Container(
+                                              color: Colors.transparent,
+                                              height: 13.h,
+                                              width: 75.w,
+                                              child: SingleChildScrollView(
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceEvenly,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "Think of saving money. then,",
+                                                      style: GlobalTextStyles
+                                                          .secondaryText2(
+                                                              txtSize: 16,
+                                                              textColor:
+                                                                  FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .secondary),
+                                                      textAlign:
+                                                          TextAlign.start,
+                                                    ),
+                                                    SizedBox(height: 10),
+                                                    Text(
+                                                      "tell us your mobile number,",
+                                                      style: GlobalTextStyles
+                                                          .primaryText2(
+                                                              txtWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              textColor:
+                                                                  FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .secondary),
+                                                      textAlign:
+                                                          TextAlign.start,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ]),
+                                ),
                               ],
                             ),
                           ),
-                          const SizedBox(
-                            height: 20,
-                          ),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 45,
-                            child: IgnorePointer(
-                              ignoring: isOtpSent == true ? true : false,
-                              child: FFButtonWidget(
-                                onPressed: _submitForm,
-                                text: "Login",
-                                options: FFButtonOptions(
-                                  width: 270.0,
-                                  height: 20.0,
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      0.0, 0.0, 0.0, 0.0),
-                                  iconPadding:
-                                      const EdgeInsetsDirectional.fromSTEB(
-                                          0.0, 0.0, 0.0, 0.0),
-                                  color: Color(data == ConnectivityResult.none
-                                      ? 0xFFCCCFD5
-                                      : 0xFF020202),
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .titleMedium
-                                      .override(
-                                        fontFamily: 'Outfit',
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.normal,
+                          Expanded(
+                            flex: 5,
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Mobile Number",
+                                        style: GlobalTextStyles.secondaryText2(
+                                            textColor:
+                                                FlutterFlowTheme.of(context)
+                                                    .primary),
+                                        textAlign: TextAlign.start,
                                       ),
-                                  elevation: 2.0,
-                                  borderSide: const BorderSide(
-                                    color: Colors.transparent,
-                                    width: 1.0,
+                                      SizedBox(
+                                        height: 15,
+                                      ),
+                                      Container(
+                                        height: 55,
+                                        decoration: BoxDecoration(
+                                            border: Border.all(
+                                              width: 1,
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .primary,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(10)),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const SizedBox(
+                                              width: 10,
+                                            ),
+                                            SizedBox(
+                                              width: 40,
+                                              child: TextField(
+                                                enabled: false,
+                                                controller: countryController,
+                                                keyboardType:
+                                                    TextInputType.number,
+                                                decoration:
+                                                    const InputDecoration(
+                                                  border: InputBorder.none,
+                                                ),
+                                              ),
+                                            ),
+                                            const Text(
+                                              "|",
+                                              style: TextStyle(
+                                                fontSize: 33,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                              width: 10,
+                                            ),
+                                            Expanded(
+                                                child: TextFormField(
+                                              enabled: isOtpSent == true
+                                                  ? false
+                                                  : true,
+                                              maxLength: 10,
+                                              controller: PhoneController,
+                                              keyboardType: TextInputType.phone,
+                                              style: const TextStyle(
+                                                  letterSpacing: 1),
+                                              decoration: const InputDecoration(
+                                                counterText: "",
+                                                border: InputBorder.none,
+                                                hintText: "Phone",
+                                              ),
+                                            ))
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: 10,
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Checkbox(
+                                            activeColor:
+                                                FlutterFlowTheme.of(context)
+                                                    .primary1,
+                                            value: chckBoxIsChecked,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                chckBoxIsChecked = value;
+                                              });
+                                            },
+                                          ),
+                                          Expanded(
+                                            child: RichText(
+                                              text: TextSpan(
+                                                style: TextStyle(fontSize: 15),
+                                                children: [
+                                                  TextSpan(
+                                                    text: 'Our ',
+                                                    style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontWeight:
+                                                            FontWeight.w500),
+                                                  ),
+                                                  TextSpan(
+                                                    text:
+                                                        'terms and conditions',
+                                                    style: TextStyle(
+                                                      height: 1.5,
+                                                      color: FlutterFlowTheme
+                                                              .of(context)
+                                                          .primary1, // Blue color
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    // Add onTap function here for the tap functionality
+                                                    recognizer:
+                                                        TapGestureRecognizer()
+                                                          ..onTap = () {
+                                                            _navigateToTermsListScreen(
+                                                                false);
+                                                          },
+                                                  ),
+
+                                                ],
+                                              ),
+                                              maxLines: 4,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
+                                  SizedBox(
+                                    width: 50.w,
+                                    height: 6.h,
+                                    child: IgnorePointer(
+                                      ignoring:
+                                          isOtpSent == true ? true : false,
+                                      child: FFButtonWidget(
+                                        onPressed: _submitForm,
+                                        text: "AGREE & CONTINUE",
+                                        options: FFButtonOptions(
+                                          width: 270.0,
+                                          height: 20.0,
+                                          padding: const EdgeInsetsDirectional
+                                              .fromSTEB(0.0, 0.0, 0.0, 0.0),
+                                          iconPadding:
+                                              const EdgeInsetsDirectional
+                                                  .fromSTEB(0.0, 0.0, 0.0, 0.0),
+                                          color: Color(
+                                              data == ConnectivityResult.none
+                                                  ? 0xFFCCCFD5
+                                                  : 0xFF018ABE),
+                                          textStyle:
+                                              GlobalTextStyles.secondaryText2(
+                                                  txtWeight: FontWeight.bold,
+                                                  txtSize: 16,
+                                                  textColor:
+                                                      FlutterFlowTheme.of(
+                                                              context)
+                                                          .secondary),
+                                          elevation: 2.0,
+                                          borderSide: const BorderSide(
+                                            color: Colors.transparent,
+                                            width: 1.0,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(10.0),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -254,36 +646,6 @@ class _MyPhoneState extends ConsumerState<MyPhone> {
                     ),
                   )
                 : Container(),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                    bottom: 16.0), // Adjust the padding as needed
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "App Version - ",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        letterSpacing: 1,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    Text(
-                      Constants.appVersion,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        letterSpacing: 1,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -314,6 +676,13 @@ class _MyPhoneState extends ConsumerState<MyPhone> {
       return;
     }
 
+    // todo:- 9.11.23 check for terms and condition checked
+    if (!chckBoxIsChecked!) {
+      Constants.showToast(
+          "Accept Terms and conditions, to proceed.", ToastGravity.CENTER);
+      return;
+    }
+
     if (PhoneController.text == null || PhoneController.text.isEmpty) {
       Constants.showToast("Please enter a Phone Number", ToastGravity.CENTER);
     } else {
@@ -326,495 +695,69 @@ class _MyPhoneState extends ConsumerState<MyPhone> {
 
           bool isNewUse = await isNewUser("+91" + PhoneController.text);
 
-          if (PhoneController.text == "0805080508") {
+          if (PhoneController.text == "0805080508" ||
+              PhoneController.text == "0805080588") {
             Constants.isAdmin = true;
+
+            //todo:- 30.11.23 - if login with - 0805080588, means , that device token is admin app token, user app through notification to that token,means that device receives notifcation from users
+            if (PhoneController.text == "0805080588") {
+              Constants.isAdmin2 = true;
+            }
+
+
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (context) => const BudgetCopyWidget(),
               ),
             );
-            // Navigator.push(
-            //   context,
-            //   PageRouteBuilder(
-            //     transitionDuration: Duration(milliseconds: 500),
-            //     pageBuilder: (_, __, ___) => BudgetCopyWidget(),
-            //     transitionsBuilder: (_, animation, __, child) {
-            //       return ScaleTransition(
-            //         scale: Tween<double>(
-            //           begin: 0.0, // You can adjust the start scale
-            //           end: 1.0,   // You can adjust the end scale
-            //         ).animate(animation),
-            //         child: child,
-            //       );
-            //     },
-            //   ),
-            // );
+
           } else {
             Constants.isAdmin = false;
             if (isNewUse) {
-              bool isNewEnquiry =
-                  await isEnquiry(("+91" + PhoneController.text ?? ""));
-
-              if (isNewEnquiry) {
-                String documentId = firestore.collection('Enquiry').doc().id;
-
-                firestore.collection('Enquiry').doc(documentId).set({
-                  'mobile': "+91" + PhoneController.text,
-                }).then((value) async {
-                  Constants.showToast("Our Executive will reach you Shortly!",
-                      ToastGravity.BOTTOM);
-                }).catchError(
-                    (error) => print('Failed to create data: $error'));
-              }
-
 //todo:- 238.23 changes adding terms and conditions
 
-              showDialog(
-                barrierDismissible: false,
-                context:
-                    context, // Make sure you have access to the context here
-                builder: (BuildContext context) {
-                  bool _agreedToTerms =
-                      false; // Initialize this based on your needs
 
-                  return StatefulBuilder(
-                    builder: (BuildContext context, StateSetter setState) {
-                      return AlertDialog(
-                        content: Container(
-                          width: 100.w,
-                          height: 55.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Maaka",
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 5),
-                                Center(
-                                  child: Text(
-                                    "Terms and conditions update",
-                                    style: TextStyle(
-                                      color: Colors.blueGrey,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: 15),
-                                Image.asset(
-                                  'images/contract.png',
-                                  height: 100,
-                                  width: 100,
-                                ),
-                                SizedBox(height: 15),
-                                RichText(
-                                  text: TextSpan(
-                                    style: TextStyle(fontSize: 15),
-                                    children: [
-                                      TextSpan(
-                                        text: 'Our ',
-                                        style: TextStyle(
-                                          color: Colors
-                                              .black, // Change this to the desired color
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: 'terms and conditions ',
-                                        style: TextStyle(
-                                            height: 1.5,
-                                            color: Colors.blue, // Blue color
-                                            decoration:
-                                                TextDecoration.underline,
-                                            fontWeight: FontWeight.bold),
-                                        // Add onTap function here for the tap functionality
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            _navigateToTermsListScreen(false);
-                                          },
-                                      ),
-                                      TextSpan(
-                                        text: 'and ',
-                                        style: TextStyle(
-                                          color: Colors
-                                              .black, // Change this to the desired color
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: 'privacy policy document ',
-                                        style: TextStyle(
-                                            height: 1.5,
-                                            color: Colors.blue, // Blue color
-                                            decoration:
-                                                TextDecoration.underline,
-                                            fontWeight: FontWeight.bold),
-                                        // Add onTap function here for the tap functionality
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            _navigateToTermsListScreen(true);
-                                          },
-                                      ),
-                                      TextSpan(
-                                        text: ' have been recently updated.'
-                                            ' To continue using our app, please review and agree to our updated terms.',
-                                        style: TextStyle(
-                                          height: 1.5,
-                                          color: Colors
-                                              .black, // Change this to the desired color
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(height: 15),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'I have read and agreed to the terms',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                    Switch(
-                                      value: _agreedToTerms,
-                                      onChanged: (value) {
-                                        if (value) {
-                                          _navigateToTermsListScreen(false);
-                                        }
-
-                                        setState(() {
-                                          _agreedToTerms = value;
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        actions: [
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Column(
-                              children: [
-                                _agreedToTerms
-                                    ? Text(
-                                        "Call us and get Security Code to get Started!",
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      )
-                                    : Container(),
-                                Container(
-                                  height: 50,
-                                  width: MediaQuery.of(context).size.width *
-                                      0.5, // Set the desired width
-                                  child: _agreedToTerms
-                                      ? ElevatedButton(
-                                          onPressed: () async {
-                                            // showDialog(
-                                            //     barrierDismissible: false,
-                                            //     context: context,
-                                            //     builder:
-                                            //         (BuildContext context) {
-                                            //       return AlertDialog(
-                                            //         title: Center(
-                                            //             child: Text(
-                                            //                 "Why Maaka Money!")),
-                                            //         content: Container(
-                                            //           width: 70.w,
-                                            //           height: 30.h,
-                                            //           decoration: BoxDecoration(
-                                            //             // Set the color of the container
-                                            //             borderRadius:
-                                            //                 BorderRadius.circular(
-                                            //                     10), // Set the corner radius
-                                            //           ),
-                                            //           child: NewUserTracking(
-                                            //             getMobile: "+91" +
-                                            //                 PhoneController
-                                            //                     .text,
-                                            //           ),
-                                            //         ),
-                                            //         actions: [
-                                            //           TextButton(
-                                            //             onPressed: () {
-                                            //               Navigator.pop(
-                                            //                   context); // Close the dialog
-                                            //             },
-                                            //             child: Text("Close"),
-                                            //           ),
-                                            //         ],
-                                            //       );
-                                            //     });
-                                            final Uri launchUri = Uri(
-                                              scheme: 'tel',
-                                              path: Constants.adminNo2,
-                                            );
-                                            await launchUrl(launchUri);
-                                          },
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                "Call Admin",
-                                                style: TextStyle(fontSize: 17),
-                                              ),
-                                              SizedBox(width: 10),
-                                              Icon(Icons.arrow_forward),
-                                            ],
-                                          ),
-                                        )
-                                      : ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text(
-                                            "Cancel",
-                                            style: TextStyle(fontSize: 17),
-                                          ),
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  transitionDuration: Duration(milliseconds: 500),
+                  pageBuilder: (_, __, ___) => SignUp(
+                    context: context,
+                    getFireStore: firestore,
+                    getTextController: PhoneController,
+                    data: data!,
+                  ),
+                  transitionsBuilder: (_, animation, __, child) {
+                    return ScaleTransition(
+                      scale: Tween<double>(
+                        begin: 0.0, // You can adjust the start scale
+                        end: 1.0, // You can adjust the end scale
+                      ).animate(animation),
+                      child: child,
+                    );
+                  },
+                ),
               );
             } else {
               final phoneNumber = "+91" + PhoneController.text;
               SharedPreferences prefs = await SharedPreferences.getInstance();
               loginKey = prefs.getString("LoginSuccessuser1");
 
-              //todo:- 238.23 changes adding terms and conditions
-
-              showDialog(
-                barrierDismissible: false,
-                context:
-                    context, // Make sure you have access to the context here
-                builder: (BuildContext context) {
-                  bool _agreedToTerms =
-                      false; // Initialize this based on your needs
-
-                  return StatefulBuilder(
-                    builder: (BuildContext context, StateSetter setState) {
-                      return AlertDialog(
-                        content: Container(
-                          width: 100.w,
-                          height: 55.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Maaka",
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 5),
-                                Center(
-                                  child: Text(
-                                    "Terms and conditions update",
-                                    style: TextStyle(
-                                      color: Colors.blueGrey,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: 15),
-                                Image.asset(
-                                  'images/contract.png',
-                                  height: 100,
-                                  width: 100,
-                                ),
-                                SizedBox(height: 15),
-                                RichText(
-                                  text: TextSpan(
-                                    style: TextStyle(fontSize: 15),
-                                    children: [
-                                      TextSpan(
-                                        text: 'Our ',
-                                        style: TextStyle(
-                                          color: Colors
-                                              .black, // Change this to the desired color
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: 'terms and conditions ',
-                                        style: TextStyle(
-                                            height: 1.5,
-                                            color: Colors.blue, // Blue color
-                                            decoration:
-                                                TextDecoration.underline,
-                                            fontWeight: FontWeight.bold),
-                                        // Add onTap function here for the tap functionality
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            _navigateToTermsListScreen(false);
-                                          },
-                                      ),
-                                      TextSpan(
-                                        text: 'and ',
-                                        style: TextStyle(
-                                          color: Colors
-                                              .black, // Change this to the desired color
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: 'privacy policy document ',
-                                        style: TextStyle(
-                                            height: 1.5,
-                                            color: Colors.blue, // Blue color
-                                            decoration:
-                                                TextDecoration.underline,
-                                            fontWeight: FontWeight.bold),
-                                        // Add onTap function here for the tap functionality
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            _navigateToTermsListScreen(true);
-                                          },
-                                      ),
-                                      TextSpan(
-                                        text: ' have been recently updated.'
-                                            ' To continue using our app, please review and agree to our updated terms.',
-                                        style: TextStyle(
-                                          height: 1.5,
-                                          color: Colors
-                                              .black, // Change this to the desired color
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(height: 15),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'I have read and agreed to the terms',
-                                        style: TextStyle(),
-                                      ),
-                                    ),
-                                    Switch(
-                                      value: _agreedToTerms,
-                                      onChanged: (value) {
-                                        if (value) {
-                                          _navigateToTermsListScreen(false);
-                                        }
-
-                                        setState(() {
-                                          _agreedToTerms = value;
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        actions: [
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Column(
-                              children: [
-                                Container(
-                                  height: 50,
-                                  width: MediaQuery.of(context).size.width *
-                                      0.5, // Set the desired width
-                                  child: _agreedToTerms
-                                      ? ElevatedButton(
-                                          onPressed: () async {
-                                            // Navigator.pushReplacement(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder: (context) => MyVerify(
-                                            //       getMobile: "+91" +
-                                            //           PhoneController.text,
-                                            //     ),
-                                            //   ),
-                                            // );
-                                            Navigator.push(
-                                              context,
-                                              PageRouteBuilder(
-                                                transitionDuration:
-                                                    Duration(milliseconds: 650),
-                                                pageBuilder: (_, __, ___) =>
-                                                    MyVerify(
-                                                  getMobile: "+91" +
-                                                      PhoneController.text,
-                                                ),
-                                                transitionsBuilder:
-                                                    (_, animation, __, child) {
-                                                  return FadeTransition(
-                                                    opacity: animation,
-                                                    child: child,
-                                                  );
-                                                },
-                                              ),
-                                            );
-                                          },
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                "Get Started",
-                                                style: TextStyle(fontSize: 17),
-                                              ),
-                                              SizedBox(width: 10),
-                                              Icon(Icons.arrow_forward),
-                                            ],
-                                          ),
-                                        )
-                                      : ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text(
-                                            "Cancel",
-                                            style: TextStyle(fontSize: 17),
-                                          ),
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  transitionDuration: Duration(milliseconds: 650),
+                  pageBuilder: (_, __, ___) => MyVerify(
+                    getMobile: "+91" + PhoneController.text,
+                  ),
+                  transitionsBuilder: (_, animation, __, child) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    );
+                  },
+                ),
               );
             }
           }
@@ -827,178 +770,7 @@ class _MyPhoneState extends ConsumerState<MyPhone> {
   }
 }
 
-//todo"- 31.7.23 tracking new user
-
-class NewUserTracking extends StatefulWidget {
-  @override
-  _NewUserTrackingState createState() => _NewUserTrackingState();
-
-  final String? getMobile;
-
-  NewUserTracking({
-    required this.getMobile,
-  });
-}
-
-class _NewUserTrackingState extends State<NewUserTracking> {
-  final PageController _pageController = PageController(initialPage: 0);
-  final FirebaseFirestore fireStore = FirebaseFirestore.instance;
-  final List<Tuple3> contents = [
-    Tuple3(
-        "Secure and Private:",
-        "Maaka ensures the security and privacy of your financial information. You can trust that your data and savings are in safe hands! 💹💳",
-        "images/security.png"),
-    Tuple3(
-        "Interest on Transactions:",
-        "Unlike a traditional piggy bank, Maaka doesn't just hold your money; it grows it too! With every transaction, you earn interest, giving your savings an extra boost! 🌳💰",
-        "images/interest.png"),
-    Tuple3(
-        "Building Emergency Fund:",
-        "Maaka helps you build a robust emergency fund. By saving small amounts consistently and earning interest, you'll have a safety net ready to handle unexpected expenses! 💰💰",
-        "images/emergency.png"),
-    Tuple3(
-        "Financial Discipline:",
-        "Using Maaka encourages better financial habits. The app helps you track your spending, set savings goals, and stay disciplined in achieving them! 💹💳",
-        "images/dicipline.png"),
-  ];
-  bool _isLastPage = false;
-  bool _showContactOptions = false;
-  ConnectivityResult? data;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Consumer(builder: (context, ref, child) {
-        data = ref.watch(connectivityProvider);
-
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: _showContactOptions
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            leading: Icon(Icons.phone),
-                            title: Text("Call Admin"),
-                            onTap: () {
-                              // Handle phone call option here
-                              print("Call Admin");
-                            },
-                          ),
-                        ],
-                      ),
-                    )
-                  : PageView.builder(
-                      controller: _pageController,
-                      itemCount: contents.length,
-                      onPageChanged: (int page) {
-                        setState(() {
-                          _isLastPage = page == contents.length - 1;
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: EdgeInsets.symmetric(horizontal: 20),
-                          padding: EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context).primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  contents[index].item1,
-                                  textAlign: TextAlign.start,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 10,
-                                ),
-                                Image.asset(
-                                  () {
-                                    return contents[index].item3;
-                                  }(),
-                                  width: 200,
-                                  height: 200,
-                                  errorBuilder:
-                                      (context, exception, stackTrace) {
-                                    return Image.asset(
-                                        width: 120,
-                                        height: 120,
-                                        "images/error.png");
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-            SizedBox(height: 20),
-            Visibility(
-              visible: _showContactOptions ? false : true,
-              child: Container(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        if (_pageController.page != 0) {
-                          _pageController.previousPage(
-                            duration: Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                          );
-                        }
-                      },
-                      icon: Icon(Icons.arrow_back_ios),
-                    ),
-                    SizedBox(width: 5),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final Uri launchUri = Uri(
-                          scheme: 'tel',
-                          path: Constants.adminNo2,
-                        );
-                        await launchUrl(launchUri);
-                      },
-                      child: Text("Call Executive"),
-                    ),
-                    SizedBox(width: 5),
-                    Visibility(
-                      visible: !_isLastPage,
-                      child: IconButton(
-                        onPressed: () {
-                          if (_pageController.page != contents.length - 1) {
-                            _pageController.nextPage(
-                              duration: Duration(milliseconds: 500),
-                              curve: Curves.easeInOut,
-                            );
-                          }
-                        },
-                        icon: Icon(Icons.arrow_forward_ios),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          ],
-        );
-      }),
-    );
-  }
-}
-
+//todo:- Terms and conditions screen
 class TermsListScreen extends StatelessWidget {
   static String getPolicy() {
     return """
@@ -1067,9 +839,9 @@ Do we share the information we collect with third parties?
 
 We may share the information that we collect, both personal and non-personal, with third parties such as advertisers, contest sponsors, promotional and marketing partners, and others who provide our content or whose products or services we think may interest you. We may also share it with our current and future affiliated companies and business partners, and if we are involved in a merger, asset sale or other business reorganization, we may also share or transfer your personal and non-personal information to our successors-in-interest.
 
-  We may engage trusted third party service providers to perform functions and provide services to us, such as hosting and maintaining our servers and the app, database storage and management, e-mail management, storage marketing, credit card processing, customer service and fulfilling orders for products and services you may purchase through the app. We will likely share your personal information, and possibly some non-personal information, with these third parties to enable them to perform these services for us and for you.
+We may engage trusted third party service providers to perform functions and provide services to us, such as hosting and maintaining our servers and the app, database storage and management, e-mail management, storage marketing, credit card processing, customer service and fulfilling orders for products and services you may purchase through the app. We will likely share your personal information, and possibly some non-personal information, with these third parties to enable them to perform these services for us and for you.
 
-  We may share portions of our log file data, including IP addresses, for analytics purposes with third parties such as web analytics partners, application developers, and ad networks. If your IP address is shared, it may be used to estimate general location and other technographics such as connection speed, whether you have visited the app in a shared location, and type of the device used to visit the app. They may aggregate information about our advertising and what you see on the app and then provide auditing, research and reporting for us and our advertisers.   
+We may share portions of our log file data, including IP addresses, for analytics purposes with third parties such as web analytics partners, application developers, and ad networks. If your IP address is shared, it may be used to estimate general location and other technographics such as connection speed, whether you have visited the app in a shared location, and type of the device used to visit the app. They may aggregate information about our advertising and what you see on the app and then provide auditing, research and reporting for us and our advertisers. 
 
 We may also disclose personal and non-personal information about you to government or law enforcement officials or private parties as we, in our sole discretion, believe necessary or appropriate in order to respond to claims, legal process (including subpoenas), to protect our rights and interests or those of a third party, the safety of the public or any person, to prevent or stop any illegal, unethical, or legally actionable activity, or to otherwise comply with applicable court orders, laws, rules and regulations. 
 
@@ -1191,7 +963,7 @@ Don't hesitate to contact us if you have any questions.
     Tuple2("3. Withdrawal Flexibility:",
         "You have the freedom to withdraw your saved amount whenever you need it. However, as it's a piggy bank concept, Maaka's administration will act as an intermediary when releasing your savings to your account. This ensures that you use your savings purposefully, rather than spending more than saving."),
     Tuple2("4. Interest on Savings:",
-        "For each transaction involving your saved amount, Maaka pays an interest ranging from 0.5% to 1%. Please note that the maximum interest limit per day is restricted to ₹5 (Indian Rupees Five only)."),
+        "For each transaction involving your saved amount, Maaka pays an interest ranging from 0.1% to 0.3%. Please note that the maximum interest limit per day is restricted to ₹5 (Indian Rupees Five only)."),
     Tuple2("5. Emergency Fund Commitment:",
         "We are committed to growing your emergency fund so that your savings can truly help you when you need it. If We fail to return your requested amount within 24 hours, Maaka promises to pay an additional 0.5% interest on the requested amount."),
   ];
@@ -1207,7 +979,9 @@ Don't hesitate to contact us if you have any questions.
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Terms and Conditions'),
+        backgroundColor: FlutterFlowTheme.of(context).primary1,
+        title:
+            Text(isPrivacyTapped ? 'Privacy Policy' : 'Terms and Conditions'),
       ),
       body: ListView.builder(
         itemCount: isPrivacyTapped ? polData.length : termsData.length,
@@ -1224,11 +998,507 @@ Don't hesitate to contact us if you have any questions.
       ),
       bottomNavigationBar: Container(
         padding: EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context); // Dismiss the screen
+        child: SizedBox(
+          width: 50.w,
+          height: 6.h,
+          child: IgnorePointer(
+            ignoring: isOtpSent == true ? true : false,
+            child: FFButtonWidget(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              text: "OK",
+              options: FFButtonOptions(
+                width: 270.0,
+                height: 20.0,
+                padding:
+                    const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
+                iconPadding:
+                    const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
+                color: Color(0xFF018ABE),
+                textStyle: GlobalTextStyles.secondaryText1(
+                    txtWeight: FontWeight.bold,
+                    textColor: FlutterFlowTheme.of(context).secondary),
+                elevation: 2.0,
+                borderSide: const BorderSide(
+                  color: Colors.transparent,
+                  width: 1.0,
+                ),
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+//todo:- 17.10.23 customized alert dialog
+
+class CustomAlertDialog {
+
+
+  static showJourneyComDialog(
+      BuildContext context, TextEditingController getTextController) {
+    String? name = '';
+    String? feedback = '';
+
+    GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+    showDialog(
+      barrierDismissible: false,
+      context: context, // Make sure you have access to the context here
+      builder: (BuildContext context) {
+        bool _agreedToTerms = false; // Initialize this based on your needs
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                    20.0), // Set your desired corner radius here
+              ),
+              content: Container(
+                width: 100.w,
+                height: 42.h,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Center(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Image.asset(
+                            'images/final/Login/SignUp.png',
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            "We Received your Request",
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            "Our Executive will connect with you shortly.",
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.5,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: FlutterFlowTheme.of(context).primary,
+                            ),
+                            height: 50,
+                            // width: MediaQuery.of(context).size.width * 0.5,
+                            child: TextButton(
+                              onPressed: () async {
+
+
+                                //todo:- 30.11.23 when user successfully sign up, then should push notification to admin
+
+                                String? token =
+                                await NotificationService
+                                    .getDocumentIDsAndData();
+                                if (token != null) {
+                                  Response? response =
+                                  await NotificationService
+                                      .postNotificationRequest(
+                                      token,
+                                      "Hi Admin,\nNew user is Signed Up!",
+                                      "Hurry up, let's add them to Maaka App.");
+                                  // Handle the response as needed
+                                } else {
+                                  print(
+                                      "Problem in getting Token");
+                                }
+
+
+
+                                getTextController.text = "";
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => MyPhone()),
+                                  (route) => false,
+                                );
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "Ok",
+                                    style: TextStyle(
+                                        fontSize: 17, color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
           },
-          child: Text("OK"),
+        );
+      },
+    );
+  }
+
+  static Future<bool> isEnquiry(
+      String? phoneNumber, FirebaseFirestore getFireStore) async {
+    QuerySnapshot querySnapshot = await getFireStore
+        .collection('Enquiry')
+        .where('mobile', isEqualTo: phoneNumber)
+        .get();
+
+    return querySnapshot.docs.isEmpty;
+  }
+
+}
+
+//todo:- 10.11.23 sign up screen
+class SignUp extends ConsumerStatefulWidget {
+  SignUp(
+      {Key? key,
+      required this.context,
+      required this.getFireStore,
+      required this.getTextController,
+      required this.data})
+      : super(key: key);
+
+  BuildContext context;
+  FirebaseFirestore getFireStore;
+  TextEditingController getTextController;
+  ConnectivityResult data;
+
+  @override
+  SignUpState createState() => SignUpState();
+}
+
+class SignUpState extends ConsumerState<SignUp> {
+  String? name = '';
+  String? enquiryReason = '';
+  String? refNumber = '';
+
+  GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  static Future<bool> isEnquiry(
+      String? phoneNumber, FirebaseFirestore getFireStore) async {
+    QuerySnapshot querySnapshot = await getFireStore
+        .collection('Enquiry')
+        .where('mobile', isEqualTo: phoneNumber)
+        .get();
+
+    return querySnapshot.docs.isEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return UpgradeAlert(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Stack(children: [
+            Form(
+                key: formKey,
+                child: Container(
+                  color: Colors.white,
+                  width: double.infinity,
+                  height: double.infinity,
+                  alignment: Alignment.center,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Stack(alignment: Alignment.center, children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                              ),
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          bottom: 50.0, right: 0),
+                                      child: Align(
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          "Maaka",
+                                          style: GlobalTextStyles.primaryText2(
+                                              txtWeight: FontWeight.bold,
+                                              textColor:
+                                                  FlutterFlowTheme.of(context)
+                                                      .primary),
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Add more Positioned widgets for additional images
+                                  ),
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 20.0, right: 0),
+                                      child: Align(
+                                        alignment: Alignment.bottomLeft,
+                                        child: Text(
+                                          "Sign Up",
+                                          style: GlobalTextStyles.primaryText1(
+                                              txtWeight: FontWeight.bold,
+                                              textColor:
+                                                  FlutterFlowTheme.of(context)
+                                                      .primary),
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Add more Positioned widgets for additional images
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ]),
+                        ),
+                        Expanded(
+                          flex: 5,
+                          child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  SizedBox(height: 16.0),
+                                  TextFormField(
+                                    validator: (value) {
+                                      if (value!.isEmpty) {
+                                        return 'Name is mandatory';
+                                      }
+                                      return null;
+                                    },
+                                    onChanged: (value) {
+                                      name = value;
+                                    },
+                                    decoration: InputDecoration(
+                                      labelText: "Your Name",
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(14.0),
+                                      ),
+                                    ),
+                                    style: TextStyle(
+                                        letterSpacing: 1, fontSize: 16),
+                                  ),
+                                  SizedBox(height: 16.0),
+                                  TextFormField(
+                                    onChanged: (value) {
+                                      refNumber = value;
+                                    },
+                                    decoration: InputDecoration(
+                                      labelText: "Referrer Number (Optional)",
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(14.0),
+                                      ),
+                                      filled: false,
+                                      fillColor: Colors.grey.shade50,
+                                    ),
+                                    style: TextStyle(
+                                        letterSpacing: 1, fontSize: 16),
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 10,
+                                  ),
+                                  TextFormField(
+                                    validator: (value) {
+                                      if (value!.isEmpty) {
+                                        return 'Mail Id is mandatory';
+                                      }
+                                      return null;
+                                    },
+                                    onChanged: (value) {
+                                      enquiryReason = value;
+                                    },
+                                    decoration: InputDecoration(
+                                      labelText: "Your Mail Id",
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(14.0),
+                                      ),
+                                      filled: false,
+                                      fillColor: Colors.grey.shade50,
+                                    ),
+                                    style: TextStyle(
+                                        letterSpacing: 1, fontSize: 16),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Stack(alignment: Alignment.center, children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                              ),
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(0),
+                                      child: Align(
+                                        alignment: Alignment.topCenter,
+                                        child: SizedBox(
+                                          width: 50.w,
+                                          height: 6.h,
+                                          child: IgnorePointer(
+                                            ignoring: isOtpSent == true
+                                                ? true
+                                                : false,
+                                            child: FFButtonWidget(
+                                              onPressed: () async {
+                                                if (formKey.currentState !=
+                                                        null &&
+                                                    formKey.currentState!
+                                                        .validate()) {
+                                                  if (widget.data ==
+                                                      ConnectivityResult.none) {
+                                                    Constants.showToast(
+                                                        "No Internet Connection",
+                                                        ToastGravity.BOTTOM);
+                                                    return;
+                                                  }
+
+//todo:- 17.10.23 adding user details to firestore
+                                                  bool isNewEnquiry =
+                                                      await isEnquiry(
+                                                          ("+91" +
+                                                                  widget
+                                                                      .getTextController
+                                                                      .text ??
+                                                              ""),
+                                                          widget.getFireStore);
+
+                                                  if (isNewEnquiry) {
+                                                    String documentId = widget
+                                                        .getFireStore
+                                                        .collection('Enquiry')
+                                                        .doc()
+                                                        .id;
+
+                                                    widget.getFireStore
+                                                        .collection('Enquiry')
+                                                        .doc(documentId)
+                                                        .set({
+                                                      'mobile': "+91" +
+                                                          widget
+                                                              .getTextController
+                                                              .text,
+                                                      'name': name,
+                                                      'refNumber': refNumber,
+                                                      'enquiryReason':
+                                                          enquiryReason,
+                                                    }).then((value) async {
+                                                      CustomAlertDialog
+                                                          .showJourneyComDialog(
+                                                              context,
+                                                              widget
+                                                                  .getTextController);
+                                                    }).catchError((error) => print(
+                                                            'Failed to create data: $error'));
+                                                  } else {
+                                                    widget.getTextController
+                                                        .text = "";
+                                                    Constants.showToast(
+                                                        "Our Executive will connect with you Soon!",
+                                                        ToastGravity.CENTER);
+                                                    Navigator.of(context).pop();
+                                                  }
+// Close the initial dialog
+                                                }
+                                              },
+                                              text: "Request",
+                                              options: FFButtonOptions(
+                                                width: 270.0,
+                                                height: 20.0,
+                                                padding:
+                                                    const EdgeInsetsDirectional
+                                                        .fromSTEB(
+                                                        0.0, 0.0, 0.0, 0.0),
+                                                iconPadding:
+                                                    const EdgeInsetsDirectional
+                                                        .fromSTEB(
+                                                        0.0, 0.0, 0.0, 0.0),
+                                                color: Color(widget.data ==
+                                                        ConnectivityResult.none
+                                                    ? 0xFFCCCFD5
+                                                    : 0xFF018ABE),
+                                                textStyle: GlobalTextStyles
+                                                    .secondaryText2(
+                                                        txtWeight:
+                                                            FontWeight.bold,
+                                                        textColor:
+                                                            FlutterFlowTheme.of(
+                                                                    context)
+                                                                .secondary),
+                                                elevation: 2.0,
+                                                borderSide: const BorderSide(
+                                                  color: Colors.transparent,
+                                                  width: 1.0,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(10.0),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Add more Positioned widgets for additional images
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ]),
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
+          ]),
         ),
       ),
     );

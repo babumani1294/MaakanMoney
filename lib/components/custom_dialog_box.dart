@@ -63,25 +63,23 @@ class _CustomDialogBoxState extends State<CustomDialogBox> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                // widget.title.toString().toUpperCase() ?? "no value",
-                "Message",
-                style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: FlutterFlowTheme.of(context).primary,
-                    letterSpacing: 1),
+                widget.title.toString().toUpperCase() ?? "no value",
+                // "Message",
+                style: GlobalTextStyles.secondaryText2(
+                    txtSize: 20,
+                    textColor: FlutterFlowTheme.of(context).primary,
+                    txtWeight: FontWeight.w700),
               ),
               const SizedBox(
                 height: 15,
               ),
               Text(
                 widget.descriptions ?? "no value",
-                style: const TextStyle(
-                  fontSize: 14,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
+                style: GlobalTextStyles.secondaryText2(
+                    txtSize: 14,
+                    textColor: FlutterFlowTheme.of(context).primary,
+                    txtWeight: FontWeight.w700),
+                textAlign: TextAlign.left,
               ),
               const SizedBox(
                 height: 22,
@@ -97,6 +95,9 @@ class _CustomDialogBoxState extends State<CustomDialogBox> {
                           // onPressed: () {
                           //   Navigator.of(context).pop();
                           // },
+                          style: TextButton.styleFrom(
+                              backgroundColor:
+                                  FlutterFlowTheme.of(context).secondary),
                           onPressed: () {
                             Navigator.pop(context);
                           },
@@ -114,10 +115,13 @@ class _CustomDialogBoxState extends State<CustomDialogBox> {
                           // onPressed: () {
                           //   Navigator.of(context).pop();
                           // },
+                          style: TextButton.styleFrom(
+                              backgroundColor:
+                                  FlutterFlowTheme.of(context).primary),
                           onPressed: widget.onNoTap,
                           child: const Text(
                             "No",
-                            style: TextStyle(fontSize: 18),
+                            style: TextStyle(fontSize: 18, color: Colors.white),
                           )),
                     ),
                   ),
@@ -128,6 +132,9 @@ class _CustomDialogBoxState extends State<CustomDialogBox> {
                     alignment: Alignment.bottomRight,
                     child: ElevatedButton(
                         onPressed: widget.onTap,
+                        style: TextButton.styleFrom(
+                            backgroundColor:
+                                FlutterFlowTheme.of(context).primary),
                         child: Text(
                           widget.text ?? "no value",
                           style: const TextStyle(fontSize: 18),

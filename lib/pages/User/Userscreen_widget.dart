@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:external_app_launcher/external_app_launcher.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_share/flutter_share.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -14,6 +15,7 @@ import 'package:maaakanmoney/components/ReusableWidget/ReusableCard.dart';
 import 'package:maaakanmoney/components/constants.dart';
 import 'package:maaakanmoney/pages/Auth/mpin.dart';
 import 'package:maaakanmoney/pages/Auth/phone_auth_widget.dart';
+import 'package:maaakanmoney/pages/User/TransactionHist/TransactionHistory.dart';
 import 'package:maaakanmoney/pages/User/UserScreen_Notifer.dart';
 import 'package:maaakanmoney/pages/showUser/showUserController.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,13 +33,69 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
+import 'Cashback/CashbackDetails.dart';
 import 'Profile/Profile.dart';
+import 'Request Money/RequestMoney.dart';
+import 'SaveMoney/SaveMoney.dart';
 import 'budget_model.dart';
 export 'budget_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class BudgetWidget extends ConsumerStatefulWidget {
-  BudgetWidget({
+class ImageClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 50); // Start at the bottom-left corner
+    path.quadraticBezierTo(
+      // Add a quadratic bezier curve
+      size.width / 2, size.height, // Control point and end point
+      size.width, size.height - 50, // Control point and end point
+    );
+    path.lineTo(size.width, 0); // Draw a straight line to the top-right corner
+    path.close(); // Close the path to form a closed shape
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
+    return false;
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate({
+    @required this.minHeight,
+    @required this.maxHeight,
+    @required this.child,
+  });
+
+  final double? minHeight;
+  final double? maxHeight;
+  final Widget? child;
+
+  @override
+  double get minExtent => minHeight!;
+
+  @override
+  double get maxExtent => math.max(maxHeight!, minHeight!);
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return maxHeight != oldDelegate.maxHeight ||
+        minHeight != oldDelegate.minHeight ||
+        child != oldDelegate.child;
+  }
+}
+
+//todo:- 16.11.23 - new dashboard implementation
+class BudgetWidget1 extends ConsumerStatefulWidget {
+  BudgetWidget1({
     Key? key,
     @required this.getMobile,
     @required this.getDocId,
@@ -46,10 +104,10 @@ class BudgetWidget extends ConsumerStatefulWidget {
   String? getDocId;
 
   @override
-  _BudgetWidgetState createState() => _BudgetWidgetState();
+  _BudgetWidget1State createState() => _BudgetWidget1State();
 }
 
-class _BudgetWidgetState extends ConsumerState<BudgetWidget>
+class _BudgetWidget1State extends ConsumerState<BudgetWidget1>
     with TickerProviderStateMixin {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final txtReqAmount = TextEditingController();
@@ -61,16 +119,14 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
   String? lastProcessedMessageId;
   final ScrollController _scrollController = ScrollController();
   Timer? _timer;
-  int _currentIndex = 0;
   int _selectedIndex = 0;
-  List<Widget> _containerWidgets = [];
   bool _isNavigationBarVisible = false;
-  bool isSavAmntReq = false;
+  bool? isSavAmntReq = false;
 
-  List<String> imagePaths = [
-    'images/background1.png',
-    'images/background3.png',
-  ];
+  // List<String> imagePaths = [
+  //   'images/background1.png',
+  //   'images/background3.png',
+  // ];
 
   Future<bool> _onWillPop() async {
     return (await showDialog(
@@ -90,8 +146,30 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
               TextButton(
                 // onPressed: () =>
                 //     Navigator.of(context).pop(true), // <-- SEE HERE
-                onPressed: () {
-                  Navigator.of(context).pop(true);
+                onPressed: () async {
+                  // Navigator.of(context).pop(true);
+                  SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
+                  loginKey = prefs.getString("LoginSuccessuser1");
+
+                  if (loginKey == null || loginKey == "" || loginKey!.isEmpty) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => MyPhone()),
+                      (route) => false, // Remove all routes from the stack
+                    );
+                  } else {
+                    SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
+                    String? mPin = prefs.getString("Mpin");
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => MpinPageWidget(
+                              getMobileNo: loginKey ?? "", getMpin: mPin)),
+                      (route) => false, // Remove all routes from the stack
+                    );
+                  }
                 },
                 child: new Text('Yes'),
               ),
@@ -105,7 +183,8 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
   void initState() {
     super.initState();
 
-    _startTimer();
+    //todo:- 25.9.23 stoped advertice banner in dashboard header
+    // _startTimer();
 
     lottieController = AnimationController(vsync: this);
 
@@ -123,6 +202,8 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
 
       // _startListeningForNewMessages();
     });
+
+    getDocumentIDsAndData();
   }
 
   @override
@@ -135,8 +216,8 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
 
   @override
   Widget build(BuildContext context) {
-    int randomIndex = math.Random().nextInt(imagePaths.length);
-    String randomImagePath = imagePaths[randomIndex];
+    // int randomIndex = math.Random().nextInt(imagePaths.length);
+    // String randomImagePath = imagePaths[randomIndex];
     //todo:- 16.6.23
     final currentTime = DateTime.now();
     final currentHour = currentTime.hour;
@@ -175,298 +256,24 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
               ? AppBar(
                   backgroundColor: FlutterFlowTheme.of(context).primary,
                   automaticallyImplyLeading: false,
-                  toolbarHeight: 90,
+                  toolbarHeight: 8.h,
                   leading: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          transitionDuration: Duration(milliseconds: 200),
-                          pageBuilder: (_, __, ___) => ProfileScreen(
-                            userName:
-                                ref.read(UserDashListProvider.notifier).getUser,
-                            greetingText: greetingText,
-                            cashBack: ref
-                                .read(UserDashListProvider.notifier)
-                                .getTotalIntCredit
-                                .toStringAsFixed(2),
-                            netBalance: ref
-                                .read(UserDashListProvider.notifier)
-                                .getNetbalance
-                                .toStringAsFixed(2),
-                          ),
-                          transitionsBuilder: (_, animation, __, child) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            );
-                          },
-                        ),
-                      );
-                    },
+                    onTap: () {},
                     child: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors
-                            .blueGrey, // You can set your desired color here
+                            .transparent, // You can set your desired color here
                       ),
                       child: Icon(
                         Icons.person,
-                        color:
-                            Colors.black, // You can set your desired color here
+                        color: Colors
+                            .transparent, // You can set your desired color here
                       ),
                     ),
                   ),
-                  title: _selectedIndex == 0
-                      ? AnimatedContainer(
-                          // color: Colors.white60,
-                          duration: const Duration(milliseconds: 500),
-                          height: _isNavigationBarVisible ? 50.0 : 60.0,
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text.rich(
-                                  TextSpan(
-                                    // text: 'Hi..! ',
-                                    children: [
-                                      TextSpan(
-                                        text: ref
-                                            .read(UserDashListProvider.notifier)
-                                            .getUser,
-                                        style: TextStyle(
-                                            fontSize: 23.0,
-                                            fontFamily: 'Poppins',
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 1),
-                                      ),
-                                    ],
-                                  ),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.normal,
-                                    color: Colors.white,
-                                    fontSize: 23.0,
-                                    letterSpacing: 1.0,
-                                    fontFamily: 'Poppins',
-                                  ),
-                                ),
-                                Text(
-                                  greetingText ?? "",
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        fontFamily: 'Poppins',
-                                        color: Colors.white,
-                                        fontSize: 18.0,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ))
-                      : _selectedIndex == 1
-                          ? SingleChildScrollView(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text.rich(
-                                    TextSpan(
-                                      // text: 'Hi..! ',
-                                      children: [
-                                        TextSpan(
-                                          text: "Congratulations",
-                                          style: TextStyle(
-                                              fontSize: 23.0,
-                                              fontFamily: 'Poppins',
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              letterSpacing: 1),
-                                        ),
-                                      ],
-                                    ),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.normal,
-                                      color: Colors.white,
-                                      fontSize: 23.0,
-                                      letterSpacing: 1.0,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                  Text(
-                                    "Your Cashback Awaits – Enjoy!",
-                                    style: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .override(
-                                          fontFamily: 'Poppins',
-                                          color: Colors.white,
-                                          fontSize: 14.0,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : AnimatedContainer(
-                              // color: Colors.white60,
-                              duration: const Duration(milliseconds: 500),
-                              height: _isNavigationBarVisible ? 50.0 : 60.0,
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text.rich(
-                                      TextSpan(
-                                        // text: 'Hi..! ',
-                                        children: [
-                                          TextSpan(
-                                            text: ref
-                                                .read(UserDashListProvider
-                                                    .notifier)
-                                                .getUser,
-                                            style: TextStyle(
-                                                fontSize: 23.0,
-                                                fontFamily: 'Poppins',
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: 1),
-                                          ),
-                                        ],
-                                      ),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.white,
-                                        fontSize: 23.0,
-                                        letterSpacing: 1.0,
-                                        fontFamily: 'Poppins',
-                                      ),
-                                    ),
-                                    Text(
-                                      greetingText ?? "",
-                                      style: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .override(
-                                            fontFamily: 'Poppins',
-                                            color: Colors.white,
-                                            fontSize: 18.0,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              )),
-                  actions: [
-                    Row(
-                      children: [
-                        PopupMenuButton(itemBuilder: (context) {
-                          return [
-                            PopupMenuItem<int>(
-                              value: 1,
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Icon(
-                                    Icons.share,
-                                    color:
-                                        FlutterFlowTheme.of(context).secondary,
-                                    size: 24.0,
-                                  ),
-                                  const SizedBox(
-                                    width: 5,
-                                  ),
-                                  const Text("Share app")
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem<int>(
-                              value: 2,
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Icon(
-                                    Icons.logout,
-                                    color:
-                                        FlutterFlowTheme.of(context).secondary,
-                                    size: 24.0,
-                                  ),
-                                  const SizedBox(
-                                    width: 5,
-                                  ),
-                                  const Text("Logout")
-                                ],
-                              ),
-                            ),
-                          ];
-                        }, onSelected: (value) async {
-                          if (value == 0) {
-                            _showBottomSheet(context, 0);
-                          } else if (value == 1) {
-                            //todo:-1.08.23 uncomment below code
-                            shareApp(context);
-                          } else if (value == 2) {
-                            //todo:-30.6.2023
-                            //todo:- phone call launcher
-                            // final Uri launchUri = Uri(
-                            //   scheme: 'tel',
-                            //   path: "+919360840071",
-                            // );
-                            // await launchUrl(launchUri);
-                            //todo:- chat creation
-                            showDialog(
-                                barrierDismissible: false,
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return CustomDialogBox(
-                                    title: "Alert!",
-                                    descriptions:
-                                        "Are you sure, Do you want to logout",
-                                    text: "Ok",
-                                    isCancel: true,
-                                    onTap: () async {
-                                      SharedPreferences prefs =
-                                          await SharedPreferences.getInstance();
-                                      loginKey =
-                                          prefs.getString("LoginSuccessuser1");
-
-                                      if (loginKey == null ||
-                                          loginKey == "" ||
-                                          loginKey!.isEmpty) {
-                                        Navigator.pushAndRemoveUntil(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) => MyPhone()),
-                                          (route) =>
-                                              false, // Remove all routes from the stack
-                                        );
-                                      } else {
-                                        SharedPreferences prefs =
-                                            await SharedPreferences
-                                                .getInstance();
-                                        String? mPin = prefs.getString("Mpin");
-                                        Navigator.pushAndRemoveUntil(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  MpinPageWidget(
-                                                      getMobileNo:
-                                                          loginKey ?? "",
-                                                      getMpin: mPin)),
-                                          (route) =>
-                                              false, // Remove all routes from the stack
-                                        );
-                                      }
-                                    },
-                                  );
-                                });
-                          }
-                        }),
-                      ],
-                    ),
-                  ],
                   centerTitle: false,
                   elevation: 0.0,
                 )
@@ -490,1476 +297,570 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                       onRefresh: _handleRefresh,
                       child: CustomScrollView(
                         slivers: [
-                          _selectedIndex == 0
-                              ? SliverAppBar(
-                                  automaticallyImplyLeading: false,
-                                  expandedHeight: 22.h,
-                                  flexibleSpace: FlexibleSpaceBar(
-                                    background: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      controller: _scrollController,
-                                      child: Row(
-                                        children: [
-                                          Container(
+                          SliverAppBar(
+                            automaticallyImplyLeading: false,
+                            expandedHeight: 32.h,
+                            flexibleSpace: FlexibleSpaceBar(
+                              background: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                controller: _scrollController,
+                                child: Container(
+                                  color: FlutterFlowTheme.of(context).secondary,
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 20.0),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Material(
+                                          elevation: 8.0,
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(50),
+                                            bottomRight: Radius.circular(50),
+                                          ),
+                                          child: Container(
                                             width: 100.w,
-                                            color: FlutterFlowTheme.of(context)
-                                                .primary,
-                                            child: Center(
-                                              child: ClipPath(
-                                                clipper: ImageClipper(),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(
-                                                          8.0, 0.0, 8.0, 6.0),
-                                                  child: Card(
-                                                    elevation: 18,
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6.0),
-                                                    ),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              0.0),
-                                                      child: Image.asset(
-                                                        randomImagePath,
-                                                        width: 100.w,
-                                                        height: 100.h,
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .primary,
+                                              borderRadius: BorderRadius.only(
+                                                bottomLeft: Radius.circular(50),
+                                                bottomRight:
+                                                    Radius.circular(50),
                                               ),
                                             ),
-                                          ),
-                                          Container(
-                                            width: 100.w,
-                                            color: FlutterFlowTheme.of(context)
-                                                .primary,
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsetsDirectional
-                                                      .fromSTEB(
-                                                      8.0, 0.0, 8.0, 6.0),
-                                              child: Container(
-                                                color: Colors.transparent,
-                                                child: Card(
-                                                  elevation: 18,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            6.0),
-                                                  ),
-                                                  child: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.max,
-                                                    children: [
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsetsDirectional
-                                                                .fromSTEB(8.0,
-                                                                8.0, 8.0, 8.0),
-                                                        child: Row(
-                                                          mainAxisSize:
-                                                              MainAxisSize.max,
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsetsDirectional
-                                                                      .fromSTEB(
-                                                                      12.0,
-                                                                      10.0,
-                                                                      0.0,
-                                                                      0.0),
-                                                              child: Text(
-                                                                FFLocalizations.of(
-                                                                        context)
-                                                                    .getText(
-                                                                  'lfgx5yff' /* Net Balance */,
-                                                                ),
-                                                                style: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodyLarge
-                                                                    .override(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w500,
-                                                                      fontFamily:
-                                                                          'Poppins',
-                                                                      color: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .primary,
-                                                                      letterSpacing:
-                                                                          0.5,
-                                                                    ),
+                                            child: Container(
+                                              color: Colors.transparent,
+                                              child: Stack(children: [
+                                                Positioned.fill(
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            right: 20.0),
+                                                    child: Align(
+                                                      alignment:
+                                                          Alignment.topRight,
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          Navigator.push(
+                                                            context,
+                                                            PageRouteBuilder(
+                                                              transitionDuration:
+                                                                  Duration(
+                                                                      milliseconds:
+                                                                          200),
+                                                              pageBuilder: (_,
+                                                                      __,
+                                                                      ___) =>
+                                                                  ProfileScreen(
+                                                                userName: ref
+                                                                    .read(UserDashListProvider
+                                                                        .notifier)
+                                                                    .getUser,
+                                                                cashBack: ref
+                                                                    .read(UserDashListProvider
+                                                                        .notifier)
+                                                                    .getNetIntbalance
+                                                                    .toStringAsFixed(
+                                                                        2),
+                                                                netBalance: ref
+                                                                    .read(UserDashListProvider
+                                                                        .notifier)
+                                                                    .getNetbalance
+                                                                    .toStringAsFixed(
+                                                                        2),
                                                               ),
+                                                              transitionsBuilder:
+                                                                  (_,
+                                                                      animation,
+                                                                      __,
+                                                                      child) {
+                                                                return FadeTransition(
+                                                                  opacity:
+                                                                      animation,
+                                                                  child: child,
+                                                                );
+                                                              },
                                                             ),
-                                                            Row(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsetsDirectional
-                                                                          .fromSTEB(
-                                                                          0.0,
-                                                                          10.0,
-                                                                          12.0,
-                                                                          0.0),
-                                                                  child: Text(
-                                                                    ' ₹' +
-                                                                        ref
-                                                                            .read(UserDashListProvider.notifier)
-                                                                            .getNetbalance
-                                                                            .toString(),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .end,
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .bold,
-                                                                      color: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .primary,
-                                                                      fontSize:
-                                                                          25.0,
-                                                                      letterSpacing:
-                                                                          1.0,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
+                                                          );
+                                                        },
+                                                        child: Container(
+                                                          width: 60,
+                                                          height: 60,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            shape:
+                                                                BoxShape.circle,
+                                                            color: FlutterFlowTheme
+                                                                    .of(context)
+                                                                .secondary, // You can set your desired color here
+                                                          ),
+                                                          child: Icon(
+                                                            Icons.person,
+                                                            color: FlutterFlowTheme
+                                                                    .of(context)
+                                                                .primary, // You can set your desired color here
+                                                          ),
                                                         ),
                                                       ),
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsetsDirectional
-                                                                .fromSTEB(
-                                                                20.0,
-                                                                15.0,
-                                                                20.0,
-                                                                0.0),
-                                                        child: Row(
-                                                          mainAxisSize:
-                                                              MainAxisSize.max,
+                                                    ),
+                                                  ),
+
+                                                  // Add more Positioned widgets for additional images
+                                                ),
+                                                Positioned.fill(
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 10.0,
+                                                            right: 0),
+                                                    child: Align(
+                                                      alignment:
+                                                          Alignment.topLeft,
+                                                      child: Container(
+                                                        height: 8.h,
+                                                        width: 60.w,
+                                                        child: Column(
                                                           mainAxisAlignment:
                                                               MainAxisAlignment
-                                                                  .spaceBetween,
+                                                                  .spaceEvenly,
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
                                                           children: [
                                                             Text(
-                                                              FFLocalizations.of(
-                                                                      context)
-                                                                  .getText(
-                                                                'x2e1wpw3' /* Credited */,
+                                                                '₹' +
+                                                                    ref
+                                                                        .read(UserDashListProvider
+                                                                            .notifier)
+                                                                        .getNetbalance
+                                                                        .toString(),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .start,
+                                                                style: GlobalTextStyles
+                                                                    .primaryText1(
+                                                                        textColor:
+                                                                            FlutterFlowTheme.of(context).secondary)),
+                                                            Text(
+                                                              "Is your Saved Earning ",
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .start,
+                                                              style: GlobalTextStyles
+                                                                  .secondaryText1(
+                                                                      textColor:
+                                                                          FlutterFlowTheme.of(context)
+                                                                              .secondary1),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+
+                                                  // Add more Positioned widgets for additional images
+                                                ),
+                                                Positioned.fill(
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                      bottom: 10.0,
+                                                    ),
+                                                    child: Align(
+                                                      alignment: Alignment
+                                                          .bottomCenter,
+                                                      child: SizedBox(
+                                                        height: 18.h,
+                                                        width: 90.w,
+                                                        child: Card(
+                                                          color: FlutterFlowTheme
+                                                                  .of(context)
+                                                              .secondary,
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        15.0),
+                                                          ),
+                                                          child: Column(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .max,
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .center,
+                                                            children: [
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsetsDirectional
+                                                                            .fromSTEB(
+                                                                        20.0,
+                                                                        15.0,
+                                                                        20.0,
+                                                                        0.0),
+                                                                child: Row(
+                                                                  mainAxisSize:
+                                                                      MainAxisSize
+                                                                          .max,
+                                                                  mainAxisAlignment:
+                                                                      MainAxisAlignment
+                                                                          .spaceBetween,
+                                                                  children: [
+                                                                    Text(
+                                                                        "Credited",
+                                                                        style: GlobalTextStyles.secondaryText2(
+                                                                            textColor:
+                                                                                FlutterFlowTheme.of(context).primary,
+                                                                            txtSize: 12)),
+                                                                    Row(
+                                                                      mainAxisSize:
+                                                                          MainAxisSize
+                                                                              .max,
+                                                                      children: [
+                                                                        Text(
+                                                                            "Debited",
+                                                                            textAlign:
+                                                                                TextAlign.end,
+                                                                            style: GlobalTextStyles.secondaryText2(textColor: FlutterFlowTheme.of(context).primary, txtSize: 12)),
+                                                                      ],
+                                                                    ),
+                                                                  ],
+                                                                ),
                                                               ),
-                                                              style: FlutterFlowTheme
-                                                                      .of(context)
-                                                                  .bodyLarge
-                                                                  .override(
-                                                                    fontFamily:
-                                                                        'Poppins',
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsetsDirectional
+                                                                            .fromSTEB(
+                                                                        18,
+                                                                        10,
+                                                                        18,
+                                                                        0),
+                                                                child: Row(
+                                                                  mainAxisSize:
+                                                                      MainAxisSize
+                                                                          .max,
+                                                                  mainAxisAlignment:
+                                                                      MainAxisAlignment
+                                                                          .spaceAround,
+                                                                  children: [
+                                                                    Expanded(
+                                                                      child:
+                                                                          Container(
+                                                                        child:
+                                                                            Text(
+                                                                          '₹ ' +
+                                                                              ref.read(UserDashListProvider.notifier).getTotalCredit.toString(),
+                                                                          textAlign:
+                                                                              TextAlign.start,
+                                                                          style: GlobalTextStyles.secondaryText1(
+                                                                              textColor: FlutterFlowTheme.of(context).primary,
+                                                                              txtWeight: FontWeight.bold),
+                                                                          overflow:
+                                                                              TextOverflow.ellipsis,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                    Expanded(
+                                                                      child:
+                                                                          Container(
+                                                                        child:
+                                                                            Text(
+                                                                          '₹ ' +
+                                                                              ref.read(UserDashListProvider.notifier).getTotalDebit.toString(),
+                                                                          textAlign:
+                                                                              TextAlign.end,
+                                                                          style: GlobalTextStyles.secondaryText1(
+                                                                              textColor: FlutterFlowTheme.of(context).primary,
+                                                                              txtWeight: FontWeight.bold),
+                                                                          overflow:
+                                                                              TextOverflow.ellipsis,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                            .only(
+                                                                        top:
+                                                                            10.0),
+                                                                child: Container(
                                                                     color: FlutterFlowTheme.of(
                                                                             context)
-                                                                        .primary,
-                                                                    fontSize:
-                                                                        12.0,
-                                                                    letterSpacing:
-                                                                        0.5,
-                                                                  ),
-                                                            ),
-                                                            Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              children: [
-                                                                Text(
-                                                                  FFLocalizations.of(
-                                                                          context)
-                                                                      .getText(
-                                                                    '0qxzch1c' /* Debited */,
-                                                                  ),
-                                                                  textAlign:
-                                                                      TextAlign
-                                                                          .end,
-                                                                  style: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .headlineSmall
-                                                                      .override(
-                                                                        fontFamily:
-                                                                            'Poppins',
-                                                                        color: FlutterFlowTheme.of(context)
-                                                                            .primary,
-                                                                        fontSize:
-                                                                            12.0,
-                                                                        letterSpacing:
-                                                                            0.5,
-                                                                      ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
+                                                                        .secondary1,
+                                                                    height: 1,
+                                                                    width:
+                                                                        80.w),
+                                                              )
+                                                            ],
+                                                          ),
                                                         ),
                                                       ),
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsetsDirectional
-                                                                .fromSTEB(
-                                                                18, 10, 18, 0),
-                                                        child: Row(
-                                                          mainAxisSize:
-                                                              MainAxisSize.max,
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            FFButtonWidget(
-                                                              onPressed: () {
-                                                                print(
-                                                                    'Button pressed ...');
-                                                              },
-                                                              text: '₹ ' +
-                                                                  ref
-                                                                      .read(UserDashListProvider
-                                                                          .notifier)
-                                                                      .getTotalCredit
-                                                                      .toString(),
-                                                              options:
-                                                                  FFButtonOptions(
-                                                                width: 100,
-                                                                height: 40,
-                                                                padding:
-                                                                    const EdgeInsetsDirectional
-                                                                        .fromSTEB(
-                                                                        0,
-                                                                        0,
-                                                                        0,
-                                                                        0),
-                                                                iconPadding:
-                                                                    const EdgeInsetsDirectional
-                                                                        .fromSTEB(
-                                                                        0,
-                                                                        0,
-                                                                        0,
-                                                                        0),
-                                                                color: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .primary,
-                                                                textStyle:
-                                                                    TextStyle(
-                                                                  color: Colors
-                                                                      .white
-                                                                      .withOpacity(
-                                                                          .95),
-                                                                  letterSpacing:
-                                                                      0.5,
-                                                                  fontSize: 15,
-                                                                ),
-                                                                borderSide:
-                                                                    BorderSide(
-                                                                  color: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .primary,
-                                                                  width: 1,
-                                                                ),
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            8),
-                                                              ),
-                                                            ),
-                                                            FFButtonWidget(
-                                                              onPressed: () {},
-                                                              text: '₹ ' +
-                                                                  ref
-                                                                      .read(UserDashListProvider
-                                                                          .notifier)
-                                                                      .getTotalDebit
-                                                                      .toString(),
-                                                              options:
-                                                                  FFButtonOptions(
-                                                                width: 100,
-                                                                height: 40,
-                                                                padding:
-                                                                    const EdgeInsetsDirectional
-                                                                        .fromSTEB(
-                                                                        0,
-                                                                        0,
-                                                                        0,
-                                                                        0),
-                                                                iconPadding:
-                                                                    const EdgeInsetsDirectional
-                                                                        .fromSTEB(
-                                                                        0,
-                                                                        0,
-                                                                        0,
-                                                                        0),
-                                                                color: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .primary,
-                                                                textStyle:
-                                                                    TextStyle(
-                                                                  color: Colors
-                                                                      .white
-                                                                      .withOpacity(
-                                                                          .95),
-                                                                  letterSpacing:
-                                                                      0.5,
-                                                                  fontSize: 15,
-                                                                ),
-                                                                borderSide:
-                                                                    BorderSide(
-                                                                  color: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .primary,
-                                                                  width: 1,
-                                                                ),
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            8),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
+                                                    ),
                                                   ),
+
+                                                  // Add more Positioned widgets for additional images
                                                 ),
-                                              ),
+                                              ]),
                                             ),
                                           ),
-                                          Container(
-                                            width: 100.w,
-                                            color: FlutterFlowTheme.of(context)
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          //todo:- future implementation(adding new sections)
+                          makeTitleHeader('Quick Access', false),
+                          SliverToBoxAdapter(
+                            child: Container(
+                              height: 15.h,
+                              child: Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: Card(
+                                  color: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(0),
+                                    side: BorderSide(
+                                        color: Colors.transparent, width: 1),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      ReusableCertificateSection(
+                                        getText: "Send",
+                                        getImage: "saveMoney",
+                                        getTextColor:
+                                            FlutterFlowTheme.of(context)
                                                 .primary,
-                                            child: Center(
-                                              child: ClipPath(
-                                                clipper: ImageClipper(),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(
-                                                          8.0, 0.0, 8.0, 6.0),
-                                                  child: Card(
-                                                    elevation: 18,
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6.0),
-                                                    ),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              0.0),
-                                                      child: Image.asset(
-                                                        randomImagePath,
-                                                        width: 100.w,
-                                                        height: 100.h,
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
+                                        getIconColor: Colors.black,
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            PageRouteBuilder(
+                                              transitionDuration:
+                                                  Duration(milliseconds: 400),
+                                              pageBuilder: (_, __, ___) =>
+                                                  SaveMoney(
+                                                getMobile: widget.getMobile,
+                                                getUserName: ref
+                                                    .read(UserDashListProvider
+                                                        .notifier)
+                                                    .getUser,
                                               ),
+                                              transitionsBuilder:
+                                                  (_, animation, __, child) {
+                                                return SlideTransition(
+                                                  position: Tween<Offset>(
+                                                    begin: Offset(0, 1),
+                                                    // You can adjust the start position
+                                                    end: Offset
+                                                        .zero, // You can adjust the end position
+                                                  ).animate(animation),
+                                                  child: child,
+                                                );
+                                              },
                                             ),
-                                          ),
-                                        ],
+                                          );
+                                        },
                                       ),
+                                      ReusableCertificateSection(
+                                        getText: "Request",
+                                        getImage: "moneyReq",
+                                        getTextColor:
+                                            FlutterFlowTheme.of(context)
+                                                .primary,
+                                        getIconColor: Colors.black,
+                                        onTap: () {
+                                          isSavAmntReq = true;
+                                          Navigator.push(
+                                            context,
+                                            PageRouteBuilder(
+                                              transitionDuration:
+                                                  Duration(milliseconds: 400),
+                                              pageBuilder: (_, __, ___) =>
+                                                  RequestMoney(
+                                                getMobile: widget.getMobile,
+                                                isSavingReq: isSavAmntReq,
+                                                getUserName: ref
+                                                    .read(UserDashListProvider
+                                                        .notifier)
+                                                    .getUser,
+                                              ),
+                                              transitionsBuilder:
+                                                  (_, animation, __, child) {
+                                                return SlideTransition(
+                                                  position: Tween<Offset>(
+                                                    begin: Offset(0, 1),
+                                                    // You can adjust the start position
+                                                    end: Offset
+                                                        .zero, // You can adjust the end position
+                                                  ).animate(animation),
+                                                  child: child,
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      ReusableCertificateSection(
+                                        getText: "History",
+                                        getImage: "transHis",
+                                        getTextColor:
+                                            FlutterFlowTheme.of(context)
+                                                .primary,
+                                        getIconColor: Colors.black,
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            PageRouteBuilder(
+                                              transitionDuration:
+                                                  Duration(milliseconds: 400),
+                                              pageBuilder: (_, __, ___) =>
+                                                  TransactionHistory(
+                                                getMobile: widget.getMobile,
+                                                isSavingHis: true,
+                                              ),
+                                              transitionsBuilder:
+                                                  (_, animation, __, child) {
+                                                return SlideTransition(
+                                                  position: Tween<Offset>(
+                                                    begin: Offset(0, 1),
+                                                    // You can adjust the start position
+                                                    end: Offset
+                                                        .zero, // You can adjust the end position
+                                                  ).animate(animation),
+                                                  child: child,
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      ReusableCertificateSection(
+                                        getText: "Cashback",
+                                        getImage: "cashback",
+                                        getTextColor:
+                                            FlutterFlowTheme.of(context)
+                                                .primary,
+                                        getIconColor: Colors.black,
+                                        onTap: () {
+                                          isSavAmntReq = false;
+                                          Navigator.push(
+                                            context,
+                                            PageRouteBuilder(
+                                              transitionDuration:
+                                                  Duration(milliseconds: 400),
+                                              pageBuilder: (_, __, ___) =>
+                                                  CashbackDetails(
+                                                getMobile: widget.getMobile,
+                                                isSavingReq: isSavAmntReq,
+                                              ),
+                                              transitionsBuilder:
+                                                  (_, animation, __, child) {
+                                                return SlideTransition(
+                                                  position: Tween<Offset>(
+                                                    begin: Offset(0, 1),
+                                                    // You can adjust the start position
+                                                    end: Offset
+                                                        .zero, // You can adjust the end position
+                                                  ).animate(animation),
+                                                  child: child,
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      // Add more ReusableCertificateSection widgets as needed
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          makeTitleHeader('Recent Transactions', true),
+                          ref.read(UserDashListProvider.notifier).transList?.length == 0
+                              ? SliverToBoxAdapter(
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        InkWell(
+                                          child: Image.asset(
+                                            'images/final/SecurityCode/MPin.png',
+                                            width: 150,
+                                            height: 150,
+                                          ),
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              PageRouteBuilder(
+                                                transitionDuration:
+                                                    Duration(milliseconds: 400),
+                                                pageBuilder: (_, __, ___) =>
+                                                    SaveMoney(
+                                                  getMobile: widget.getMobile,
+                                                  getUserName: ref
+                                                      .read(UserDashListProvider
+                                                          .notifier)
+                                                      .getUser,
+                                                ),
+                                                transitionsBuilder:
+                                                    (_, animation, __, child) {
+                                                  return SlideTransition(
+                                                    position: Tween<Offset>(
+                                                      begin: Offset(0, 1),
+                                                      // You can adjust the start position
+                                                      end: Offset
+                                                          .zero, // You can adjust the end position
+                                                    ).animate(animation),
+                                                    child: child,
+                                                  );
+                                                },
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          "Tap to Start Saving Money!",
+                                          style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          "Cheers to Smart financial moves and Savings Plans.",
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 )
-                              : _selectedIndex == 1
-                                  ? SliverAppBar(
-                                      automaticallyImplyLeading: false,
-                                      expandedHeight: 22.h,
-                                      flexibleSpace: FlexibleSpaceBar(
-                                        background: SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          controller: _scrollController,
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 100.w,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                child: Center(
-                                                  child: ClipPath(
-                                                    clipper: ImageClipper(),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsetsDirectional
-                                                              .fromSTEB(8.0,
-                                                              0.0, 8.0, 6.0),
-                                                      child: Card(
-                                                        elevation: 18,
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                                      6.0),
-                                                        ),
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(0.0),
-                                                          child: Image.asset(
-                                                            randomImagePath,
-                                                            width: 100.w,
-                                                            height: 100.h,
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 100.w,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(
-                                                          8.0, 0.0, 8.0, 6.0),
-                                                  child: Container(
-                                                    color: Colors.transparent,
-                                                    child: Card(
-                                                      elevation: 18,
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(6.0),
-                                                      ),
-                                                      child: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.max,
-                                                        children: [
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    8.0,
-                                                                    8.0,
-                                                                    8.0,
-                                                                    8.0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsetsDirectional
-                                                                          .fromSTEB(
-                                                                          12.0,
-                                                                          10.0,
-                                                                          0.0,
-                                                                          0.0),
-                                                                  child: Text(
-                                                                    "Cashback",
-                                                                    style: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodyLarge
-                                                                        .override(
-                                                                          fontWeight:
-                                                                              FontWeight.w500,
-                                                                          fontFamily:
-                                                                              'Poppins',
-                                                                          color:
-                                                                              FlutterFlowTheme.of(context).primary,
-                                                                          letterSpacing:
-                                                                              0.5,
-                                                                        ),
-                                                                  ),
-                                                                ),
-                                                                Row(
-                                                                  mainAxisAlignment:
-                                                                      MainAxisAlignment
-                                                                          .spaceBetween,
-                                                                  children: [
-                                                                    Padding(
-                                                                      padding: const EdgeInsetsDirectional
-                                                                          .fromSTEB(
-                                                                          0.0,
-                                                                          10.0,
-                                                                          12.0,
-                                                                          0.0),
-                                                                      child:
-                                                                          Text(
-                                                                        ' ₹' +
-                                                                            ref.read(UserDashListProvider.notifier).getNetIntbalance.toStringAsFixed(2),
-                                                                        overflow:
-                                                                            TextOverflow.ellipsis,
-                                                                        textAlign:
-                                                                            TextAlign.end,
-                                                                        style:
-                                                                            TextStyle(
-                                                                          fontWeight:
-                                                                              FontWeight.bold,
-                                                                          color:
-                                                                              FlutterFlowTheme.of(context).primary,
-                                                                          fontSize:
-                                                                              25.0,
-                                                                          letterSpacing:
-                                                                              1.0,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    20.0,
-                                                                    15.0,
-                                                                    20.0,
-                                                                    0.0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                Text(
-                                                                  "Cashback Credited",
-                                                                  style: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodyLarge
-                                                                      .override(
-                                                                        fontFamily:
-                                                                            'Poppins',
-                                                                        color: FlutterFlowTheme.of(context)
-                                                                            .primary,
-                                                                        fontSize:
-                                                                            12.0,
-                                                                        letterSpacing:
-                                                                            0.5,
-                                                                      ),
-                                                                ),
-                                                                Row(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .max,
-                                                                  children: [
-                                                                    Text(
-                                                                      "Cashback Debited",
-                                                                      textAlign:
-                                                                          TextAlign
-                                                                              .end,
-                                                                      style: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .headlineSmall
-                                                                          .override(
-                                                                            fontFamily:
-                                                                                'Poppins',
-                                                                            color:
-                                                                                FlutterFlowTheme.of(context).primary,
-                                                                            fontSize:
-                                                                                12.0,
-                                                                            letterSpacing:
-                                                                                0.5,
-                                                                          ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    18,
-                                                                    10,
-                                                                    18,
-                                                                    0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                FFButtonWidget(
-                                                                  onPressed:
-                                                                      () {},
-                                                                  text: '₹ ' +
-                                                                      ref
-                                                                          .read(UserDashListProvider
-                                                                              .notifier)
-                                                                          .getTotalIntCredit
-                                                                          .toStringAsFixed(
-                                                                              2),
-                                                                  options:
-                                                                      FFButtonOptions(
-                                                                    width: 100,
-                                                                    height: 40,
-                                                                    padding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    iconPadding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    color: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .primary,
-                                                                    textStyle:
-                                                                        TextStyle(
-                                                                      color: Colors
-                                                                          .white
-                                                                          .withOpacity(
-                                                                              .95),
-                                                                      letterSpacing:
-                                                                          0.5,
-                                                                      fontSize:
-                                                                          15,
-                                                                    ),
-                                                                    borderSide:
-                                                                        BorderSide(
-                                                                      color: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .primary,
-                                                                      width: 1,
-                                                                    ),
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(8),
-                                                                  ),
-                                                                ),
-                                                                FFButtonWidget(
-                                                                  onPressed:
-                                                                      () {},
-                                                                  text: '₹ ' +
-                                                                      ref
-                                                                          .read(UserDashListProvider
-                                                                              .notifier)
-                                                                          .getTotalIntDebit
-                                                                          .toStringAsFixed(
-                                                                              2),
-                                                                  options:
-                                                                      FFButtonOptions(
-                                                                    width: 100,
-                                                                    height: 40,
-                                                                    padding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    iconPadding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    color: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .primary,
-                                                                    textStyle:
-                                                                        TextStyle(
-                                                                      color: Colors
-                                                                          .white
-                                                                          .withOpacity(
-                                                                              .95),
-                                                                      letterSpacing:
-                                                                          0.5,
-                                                                      fontSize:
-                                                                          15,
-                                                                    ),
-                                                                    borderSide:
-                                                                        BorderSide(
-                                                                      color: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .primary,
-                                                                      width: 1,
-                                                                    ),
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(8),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 100.w,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                child: Center(
-                                                  child: ClipPath(
-                                                    clipper: ImageClipper(),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsetsDirectional
-                                                              .fromSTEB(8.0,
-                                                              0.0, 8.0, 6.0),
-                                                      child: Card(
-                                                        elevation: 18,
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                                      6.0),
-                                                        ),
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(0.0),
-                                                          child: Image.asset(
-                                                            randomImagePath,
-                                                            width: 100.w,
-                                                            height: 100.h,
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  : SliverAppBar(
-                                      automaticallyImplyLeading: false,
-                                      expandedHeight: 22.h,
-                                      flexibleSpace: FlexibleSpaceBar(
-                                        background: SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          controller: _scrollController,
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 100.w,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(
-                                                          8.0, 0.0, 8.0, 6.0),
-                                                  child: Container(
-                                                    color: Colors.transparent,
-                                                    child: Card(
-                                                      elevation: 18,
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(6.0),
-                                                      ),
-                                                      child: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.max,
-                                                        children: [
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    8.0,
-                                                                    8.0,
-                                                                    8.0,
-                                                                    8.0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsetsDirectional
-                                                                          .fromSTEB(
-                                                                          12.0,
-                                                                          10.0,
-                                                                          0.0,
-                                                                          0.0),
-                                                                  child: Text(
-                                                                    FFLocalizations.of(
-                                                                            context)
-                                                                        .getText(
-                                                                      'lfgx5yff' /* Net Balance */,
-                                                                    ),
-                                                                    style: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodyLarge
-                                                                        .override(
-                                                                          fontWeight:
-                                                                              FontWeight.w500,
-                                                                          fontFamily:
-                                                                              'Poppins',
-                                                                          color:
-                                                                              FlutterFlowTheme.of(context).primary,
-                                                                          letterSpacing:
-                                                                              0.5,
-                                                                        ),
-                                                                  ),
-                                                                ),
-                                                                Row(
-                                                                  mainAxisAlignment:
-                                                                      MainAxisAlignment
-                                                                          .spaceBetween,
-                                                                  children: [
-                                                                    Padding(
-                                                                      padding: const EdgeInsetsDirectional
-                                                                          .fromSTEB(
-                                                                          0.0,
-                                                                          10.0,
-                                                                          12.0,
-                                                                          0.0),
-                                                                      child:
-                                                                          Text(
-                                                                        ' ₹' +
-                                                                            ref.read(UserDashListProvider.notifier).getNetbalance.toString(),
-                                                                        textAlign:
-                                                                            TextAlign.end,
-                                                                        style:
-                                                                            TextStyle(
-                                                                          fontWeight:
-                                                                              FontWeight.bold,
-                                                                          color:
-                                                                              FlutterFlowTheme.of(context).primary,
-                                                                          fontSize:
-                                                                              25.0,
-                                                                          letterSpacing:
-                                                                              1.0,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    20.0,
-                                                                    15.0,
-                                                                    20.0,
-                                                                    0.0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                Text(
-                                                                  FFLocalizations.of(
-                                                                          context)
-                                                                      .getText(
-                                                                    'x2e1wpw3' /* Credited */,
-                                                                  ),
-                                                                  style: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodyLarge
-                                                                      .override(
-                                                                        fontFamily:
-                                                                            'Poppins',
-                                                                        color: FlutterFlowTheme.of(context)
-                                                                            .primary,
-                                                                        fontSize:
-                                                                            12.0,
-                                                                        letterSpacing:
-                                                                            0.5,
-                                                                      ),
-                                                                ),
-                                                                Row(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .max,
-                                                                  children: [
-                                                                    Text(
-                                                                      FFLocalizations.of(
-                                                                              context)
-                                                                          .getText(
-                                                                        '0qxzch1c' /* Debited */,
-                                                                      ),
-                                                                      textAlign:
-                                                                          TextAlign
-                                                                              .end,
-                                                                      style: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .headlineSmall
-                                                                          .override(
-                                                                            fontFamily:
-                                                                                'Poppins',
-                                                                            color:
-                                                                                FlutterFlowTheme.of(context).primary,
-                                                                            fontSize:
-                                                                                12.0,
-                                                                            letterSpacing:
-                                                                                0.5,
-                                                                          ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    18,
-                                                                    10,
-                                                                    18,
-                                                                    0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                FFButtonWidget(
-                                                                  onPressed:
-                                                                      () {
-                                                                    print(
-                                                                        'Button pressed ...');
-                                                                  },
-                                                                  text: '₹ ' +
-                                                                      ref
-                                                                          .read(
-                                                                              UserDashListProvider.notifier)
-                                                                          .getTotalCredit
-                                                                          .toString(),
-                                                                  options:
-                                                                      FFButtonOptions(
-                                                                    width: 100,
-                                                                    height: 40,
-                                                                    padding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    iconPadding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    color: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .primary,
-                                                                    textStyle:
-                                                                        TextStyle(
-                                                                      color: Colors
-                                                                          .white
-                                                                          .withOpacity(
-                                                                              .95),
-                                                                      letterSpacing:
-                                                                          0.5,
-                                                                      fontSize:
-                                                                          15,
-                                                                    ),
-                                                                    borderSide:
-                                                                        BorderSide(
-                                                                      color: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .primary,
-                                                                      width: 1,
-                                                                    ),
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(8),
-                                                                  ),
-                                                                ),
-                                                                FFButtonWidget(
-                                                                  onPressed:
-                                                                      () {},
-                                                                  text: '₹ ' +
-                                                                      ref
-                                                                          .read(
-                                                                              UserDashListProvider.notifier)
-                                                                          .getTotalDebit
-                                                                          .toString(),
-                                                                  options:
-                                                                      FFButtonOptions(
-                                                                    width: 100,
-                                                                    height: 40,
-                                                                    padding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    iconPadding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    color: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .primary,
-                                                                    textStyle:
-                                                                        TextStyle(
-                                                                      color: Colors
-                                                                          .white
-                                                                          .withOpacity(
-                                                                              .95),
-                                                                      letterSpacing:
-                                                                          0.5,
-                                                                      fontSize:
-                                                                          15,
-                                                                    ),
-                                                                    borderSide:
-                                                                        BorderSide(
-                                                                      color: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .primary,
-                                                                      width: 1,
-                                                                    ),
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(8),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 100.w,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                child: Center(
-                                                  child: ClipPath(
-                                                    clipper: ImageClipper(),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsetsDirectional
-                                                              .fromSTEB(8.0,
-                                                              0.0, 8.0, 6.0),
-                                                      child: Card(
-                                                        elevation: 18,
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                                      6.0),
-                                                        ),
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(0.0),
-                                                          child: Image.asset(
-                                                            randomImagePath,
-                                                            width: 100.w,
-                                                            height: 100.h,
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 100.w,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(
-                                                          8.0, 0.0, 8.0, 6.0),
-                                                  child: Container(
-                                                    color: Colors.transparent,
-                                                    child: Card(
-                                                      elevation: 18,
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(6.0),
-                                                      ),
-                                                      child: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.max,
-                                                        children: [
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    8.0,
-                                                                    8.0,
-                                                                    8.0,
-                                                                    8.0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsetsDirectional
-                                                                          .fromSTEB(
-                                                                          12.0,
-                                                                          10.0,
-                                                                          0.0,
-                                                                          0.0),
-                                                                  child: Text(
-                                                                    "Cashback",
-                                                                    style: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodyLarge
-                                                                        .override(
-                                                                          fontWeight:
-                                                                              FontWeight.w500,
-                                                                          fontFamily:
-                                                                              'Poppins',
-                                                                          color:
-                                                                              FlutterFlowTheme.of(context).primary,
-                                                                          letterSpacing:
-                                                                              0.5,
-                                                                        ),
-                                                                  ),
-                                                                ),
-                                                                Row(
-                                                                  mainAxisAlignment:
-                                                                      MainAxisAlignment
-                                                                          .spaceBetween,
-                                                                  children: [
-                                                                    Padding(
-                                                                      padding: const EdgeInsetsDirectional
-                                                                          .fromSTEB(
-                                                                          0.0,
-                                                                          10.0,
-                                                                          12.0,
-                                                                          0.0),
-                                                                      child:
-                                                                          Text(
-                                                                        ' ₹' +
-                                                                            ref.read(UserDashListProvider.notifier).getNetIntbalance.toStringAsFixed(2),
-                                                                        overflow:
-                                                                            TextOverflow.ellipsis,
-                                                                        textAlign:
-                                                                            TextAlign.end,
-                                                                        style:
-                                                                            TextStyle(
-                                                                          fontWeight:
-                                                                              FontWeight.bold,
-                                                                          color:
-                                                                              FlutterFlowTheme.of(context).primary,
-                                                                          fontSize:
-                                                                              25.0,
-                                                                          letterSpacing:
-                                                                              1.0,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    20.0,
-                                                                    15.0,
-                                                                    20.0,
-                                                                    0.0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                Text(
-                                                                  "Cashback Credited",
-                                                                  style: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodyLarge
-                                                                      .override(
-                                                                        fontFamily:
-                                                                            'Poppins',
-                                                                        color: FlutterFlowTheme.of(context)
-                                                                            .primary,
-                                                                        fontSize:
-                                                                            12.0,
-                                                                        letterSpacing:
-                                                                            0.5,
-                                                                      ),
-                                                                ),
-                                                                Row(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .max,
-                                                                  children: [
-                                                                    Text(
-                                                                      "Cashback Debited",
-                                                                      textAlign:
-                                                                          TextAlign
-                                                                              .end,
-                                                                      style: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .headlineSmall
-                                                                          .override(
-                                                                            fontFamily:
-                                                                                'Poppins',
-                                                                            color:
-                                                                                FlutterFlowTheme.of(context).primary,
-                                                                            fontSize:
-                                                                                12.0,
-                                                                            letterSpacing:
-                                                                                0.5,
-                                                                          ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsetsDirectional
-                                                                    .fromSTEB(
-                                                                    18,
-                                                                    10,
-                                                                    18,
-                                                                    0),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .max,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                FFButtonWidget(
-                                                                  onPressed:
-                                                                      () {},
-                                                                  text: '₹ ' +
-                                                                      ref
-                                                                          .read(UserDashListProvider
-                                                                              .notifier)
-                                                                          .getTotalIntCredit
-                                                                          .toStringAsFixed(
-                                                                              2),
-                                                                  options:
-                                                                      FFButtonOptions(
-                                                                    width: 100,
-                                                                    height: 40,
-                                                                    padding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    iconPadding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    color: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .primary,
-                                                                    textStyle:
-                                                                        TextStyle(
-                                                                      color: Colors
-                                                                          .white
-                                                                          .withOpacity(
-                                                                              .95),
-                                                                      letterSpacing:
-                                                                          0.5,
-                                                                      fontSize:
-                                                                          15,
-                                                                    ),
-                                                                    borderSide:
-                                                                        BorderSide(
-                                                                      color: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .primary,
-                                                                      width: 1,
-                                                                    ),
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(8),
-                                                                  ),
-                                                                ),
-                                                                FFButtonWidget(
-                                                                  onPressed:
-                                                                      () {},
-                                                                  text: '₹ ' +
-                                                                      "0.0",
-                                                                  options:
-                                                                      FFButtonOptions(
-                                                                    width: 100,
-                                                                    height: 40,
-                                                                    padding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    iconPadding:
-                                                                        const EdgeInsetsDirectional
-                                                                            .fromSTEB(
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0),
-                                                                    color: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .primary,
-                                                                    textStyle:
-                                                                        TextStyle(
-                                                                      color: Colors
-                                                                          .white
-                                                                          .withOpacity(
-                                                                              .95),
-                                                                      letterSpacing:
-                                                                          0.5,
-                                                                      fontSize:
-                                                                          15,
-                                                                    ),
-                                                                    borderSide:
-                                                                        BorderSide(
-                                                                      color: FlutterFlowTheme.of(
-                                                                              context)
-                                                                          .primary,
-                                                                      width: 1,
-                                                                    ),
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(8),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                          //todo:- future implementation(adding new sections)
-                          // makeHeader('Do more with Maakan Money', false),
-                          // SliverToBoxAdapter(
-                          //   child: Container(
-                          //     height: 15.h,
-                          //     child: Padding(
-                          //       padding: const EdgeInsets.all(0.0),
-                          //       child: Card(
-                          //         color: Colors.white,
-                          //         elevation: 0,
-                          //         shape: RoundedRectangleBorder(
-                          //           borderRadius: BorderRadius.circular(0),
-                          //           side: BorderSide(
-                          //               color: Colors.transparent, width: 1),
-                          //         ),
-                          //         child: ListView.builder(
-                          //           scrollDirection: Axis.horizontal,
-                          //           itemCount: 4,
-                          //           itemBuilder: (context, index) {
-                          //             return Container(
-                          //               child: ReusableCertificateSection(
-                          //                 getText: "dfg",
-                          //                 getImage: "BOND",
-                          //                 getTextColor: Colors.black,
-                          //                 getIconColor: Colors.black,
-                          //                 onTap: () {},
-                          //               ),
-                          //             );
-                          //           },
-                          //         ),
-                          //       ),
-                          //     ),
-                          //   ),
-                          // ),
-                          makeHeader('Transactions', true),
-                          _selectedIndex == 0
-                              ? SliverList(
+                              : SliverList(
                                   delegate: SliverChildBuilderDelegate(
                                     (BuildContext context, int index) {
+                                      if (index > 2) {
+                                        return SizedBox
+                                            .shrink(); // Return an empty widget for transactions beyond the last three
+                                      }
+
                                       final document = ref
                                           .read(UserDashListProvider.notifier)
                                           .transList?[index];
@@ -1993,10 +894,10 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                                         .primary
                                                     : FlutterFlowTheme.of(
                                                             context)
-                                                        .secondary,
+                                                        .secondary1,
                                                 clipBehavior:
                                                     Clip.antiAliasWithSaveLayer,
-                                                elevation: 6.0,
+                                                elevation: 5.0,
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:
                                                       BorderRadius.circular(
@@ -2018,23 +919,24 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                                 transType == true
                                                     ? "Deposit"
                                                     : "Withdrawn",
-                                                style: TextStyle(
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .primary,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16.0,
-                                                    letterSpacing: 1),
+                                                style: GlobalTextStyles
+                                                    .secondaryText1(
+                                                        txtSize: 16,
+                                                        textColor:
+                                                            FlutterFlowTheme.of(
+                                                                    context)
+                                                                .primary,
+                                                        txtWeight:
+                                                            FontWeight.bold),
                                               ),
                                               subtitle: Text(
-                                                  date.toString().toUpperCase(),
-                                                  style: TextStyle(
-                                                      color:
-                                                          Colors.grey.shade600,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 12.0,
-                                                      letterSpacing: 0.5)),
+                                                date.toString().toUpperCase(),
+                                                style: GlobalTextStyles
+                                                    .secondaryText2(
+                                                        txtSize: 12,
+                                                        txtWeight:
+                                                            FontWeight.bold),
+                                              ),
                                               trailing: Container(
                                                 child: Column(
                                                   mainAxisAlignment:
@@ -2048,20 +950,23 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                                           ? "+" +
                                                               '$amount' +
                                                               ' ₹'
-                                                          : "-" +
+                                                          : "" +
                                                               '$amount' +
                                                               ' ₹',
-                                                      style: TextStyle(
-                                                        color: transType == true
-                                                            ? FlutterFlowTheme
-                                                                    .of(context)
-                                                                .primary
-                                                            : Colors.red,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16.0,
-                                                        letterSpacing: 0.5,
-                                                      ),
+                                                      style: GlobalTextStyles.secondaryText1(
+                                                          txtSize: 16,
+                                                          textColor: transType ==
+                                                                  true
+                                                              ? FlutterFlowTheme
+                                                                      .of(
+                                                                          context)
+                                                                  .deposite
+                                                              : FlutterFlowTheme
+                                                                      .of(
+                                                                          context)
+                                                                  .withdrawal,
+                                                          txtWeight:
+                                                              FontWeight.bold),
                                                     ),
                                                     Visibility(
                                                       visible: transType == true
@@ -2073,16 +978,19 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                                                 '$getFinInt' +
                                                                 ' ₹'
                                                             : '',
-                                                        style: TextStyle(
-                                                          color:
-                                                              transType == true
-                                                                  ? Colors.grey
-                                                                  : Colors.red,
-                                                          fontWeight:
-                                                              FontWeight.normal,
-                                                          fontSize: 14.0,
-                                                          letterSpacing: 0.5,
-                                                        ),
+                                                        style: GlobalTextStyles
+                                                            .secondaryText1(
+                                                                txtSize: 14,
+                                                                textColor:
+                                                                    transType ==
+                                                                            true
+                                                                        ? Colors
+                                                                            .grey
+                                                                        : Colors
+                                                                            .red,
+                                                                txtWeight:
+                                                                    FontWeight
+                                                                        .bold),
                                                       ),
                                                     ),
                                                   ],
@@ -2100,279 +1008,217 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                             ?.length ??
                                         0,
                                   ),
-                                )
-                              : _selectedIndex == 1
-                                  ? SliverList(
-                                      delegate: SliverChildBuilderDelegate(
-                                        (BuildContext context, int index) {
-                                          final document = ref
-                                              .read(
-                                                  UserDashListProvider.notifier)
-                                              .cashBackList?[index];
-                                          final amount = document?.amount;
-                                          final date = document?.date;
-                                          final mobile = document?.mobile;
-                                          final docId = document?.docId;
-
-                                          return Container(
-                                            color:
-                                                Colors.white.withOpacity(0.95),
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(5),
-                                              child: Card(
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          6.0),
-                                                ),
-                                                color: Colors.white,
-                                                elevation: 4.0,
-                                                child: ListTile(
-                                                  leading: Card(
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .secondary,
-                                                    clipBehavior: Clip
-                                                        .antiAliasWithSaveLayer,
-                                                    elevation: 6.0,
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8.0),
-                                                    ),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              8.0),
-                                                      child: Icon(
-                                                        Icons.arrow_back,
-                                                        color: Colors.white,
-                                                        size: 24.0,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  title: Text(
-                                                    "Cashback",
-                                                    style: TextStyle(
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .primary,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16.0,
-                                                        letterSpacing: 1),
-                                                  ),
-                                                  subtitle: Text(
-                                                      date
-                                                          .toString()
-                                                          .toUpperCase(),
-                                                      style: TextStyle(
-                                                          color: Colors
-                                                              .grey.shade600,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 12.0,
-                                                          letterSpacing: 0.5)),
-                                                  trailing: Container(
-                                                    child: Column(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceEvenly,
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .end,
-                                                      children: [
-                                                        Text(
-                                                          "+" +
-                                                              '$amount' +
-                                                              ' ₹',
-                                                          style: TextStyle(
-                                                            color: Colors.red,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 16.0,
-                                                            letterSpacing: 0.5,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  onTap: () {},
-                                                ),
+                                ),
+                          makeTitleHeader('News and Promo', false),
+                          SliverToBoxAdapter(
+                            child: Container(
+                              height: 45.h,
+                              width: 100.w,
+                              decoration: BoxDecoration(
+                                color: FlutterFlowTheme.of(context).secondary,
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(0),
+                                  bottomRight: Radius.circular(0),
+                                ),
+                              ),
+                              child: Center(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        height: 20.h,
+                                        width: 90.w,
+                                        decoration: BoxDecoration(
+                                          color: FlutterFlowTheme.of(context)
+                                              .secondary1
+                                              .withOpacity(0.6),
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(10.0)),
+                                        ),
+                                        child: Stack(children: [
+                                          Positioned.fill(
+                                            child: Align(
+                                              alignment: Alignment.bottomLeft,
+                                              child: Image.asset(
+                                                'images/final/Dashboard/addvertisement1.png',
                                               ),
                                             ),
-                                          );
-                                        },
-                                        childCount: ref
-                                                .read(UserDashListProvider
-                                                    .notifier)
-                                                .cashBackList
-                                                ?.length ??
-                                            0,
-                                      ),
-                                    )
-                                  : SliverList(
-                                      delegate: SliverChildBuilderDelegate(
-                                        (BuildContext context, int index) {
-                                          final document = ref
-                                              .read(
-                                                  UserDashListProvider.notifier)
-                                              .transList?[index];
-                                          final amount = document?.amount;
-                                          final transType = document?.isDeposit;
-                                          final date = document?.date;
-                                          final mobile = document?.mobile;
-                                          final docId = document?.docId;
-                                          final interest = document?.interest;
 
-                                          String getFinInt = interest == null
-                                              ? 0.0.toString()
-                                              : interest.toStringAsFixed(2);
-
-                                          return Container(
-                                            color:
-                                                Colors.white.withOpacity(0.95),
+                                            // Add more Positioned widgets for additional images
+                                          ),
+                                          Positioned.fill(
                                             child: Padding(
-                                              padding: const EdgeInsets.all(5),
-                                              child: Card(
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          6.0),
-                                                ),
-                                                color: Colors.white,
-                                                elevation: 4.0,
-                                                child: ListTile(
-                                                  leading: Card(
-                                                    color: transType == true
-                                                        ? FlutterFlowTheme.of(
-                                                                context)
-                                                            .primary
-                                                        : FlutterFlowTheme.of(
-                                                                context)
-                                                            .secondary,
-                                                    clipBehavior: Clip
-                                                        .antiAliasWithSaveLayer,
-                                                    elevation: 6.0,
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8.0),
-                                                    ),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              8.0),
-                                                      child: Icon(
-                                                        transType == true
-                                                            ? Icons
-                                                                .arrow_forward
-                                                            : Icons.arrow_back,
-                                                        color: Colors.white,
-                                                        size: 24.0,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  title: Text(
-                                                    transType == true
-                                                        ? "Deposit"
-                                                        : "Withdrawn",
-                                                    style: TextStyle(
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .primary,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16.0,
-                                                        letterSpacing: 1),
-                                                  ),
-                                                  subtitle: Text(
-                                                      date
-                                                          .toString()
-                                                          .toUpperCase(),
-                                                      style: TextStyle(
-                                                          color: Colors
-                                                              .grey.shade600,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 12.0,
-                                                          letterSpacing: 0.5)),
-                                                  trailing: Container(
-                                                    child: Column(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceEvenly,
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .end,
-                                                      children: [
-                                                        Text(
-                                                          transType == true
-                                                              ? "+" +
-                                                                  '$amount' +
-                                                                  ' ₹'
-                                                              : "-" +
-                                                                  '$amount' +
-                                                                  ' ₹',
-                                                          style: TextStyle(
-                                                            color: transType ==
-                                                                    true
-                                                                ? FlutterFlowTheme.of(
+                                              padding: const EdgeInsets.only(
+                                                  top: 0.0, right: 10),
+                                              child: Align(
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: Container(
+                                                  height: 10.h,
+                                                  width: 50.w,
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceAround,
+                                                    children: [
+                                                      Text(
+                                                        "Get Instant",
+                                                        style: GlobalTextStyles
+                                                            .secondaryText1(
+                                                                txtSize: 24,
+                                                                textColor: FlutterFlowTheme.of(
                                                                         context)
-                                                                    .primary
-                                                                : Colors.red,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 16.0,
-                                                            letterSpacing: 0.5,
-                                                          ),
-                                                        ),
-                                                        Visibility(
-                                                          visible:
-                                                              transType == true
-                                                                  ? true
-                                                                  : false,
-                                                          child: Text(
-                                                            transType == true
-                                                                ? "+" +
-                                                                    '$getFinInt' +
-                                                                    ' ₹'
-                                                                : '',
-                                                            style: TextStyle(
-                                                              color: transType ==
-                                                                      true
-                                                                  ? Colors.grey
-                                                                  : Colors.red,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .normal,
-                                                              fontSize: 14.0,
-                                                              letterSpacing:
-                                                                  0.5,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
+                                                                    .secondary,
+                                                                txtWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                      ),
+                                                      Text(
+                                                        "Cashback!",
+                                                        style: GlobalTextStyles
+                                                            .secondaryText1(
+                                                                txtSize: 24,
+                                                                textColor: FlutterFlowTheme.of(
+                                                                        context)
+                                                                    .secondary,
+                                                                txtWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  onTap: () {},
                                                 ),
                                               ),
                                             ),
-                                          );
-                                        },
-                                        childCount: ref
-                                                .read(UserDashListProvider
-                                                    .notifier)
-                                                .transList
-                                                ?.length ??
-                                            0,
+
+                                            // Add more Positioned widgets for additional images
+                                          ),
+                                        ]),
                                       ),
-                                    ),
+                                      Container(
+                                        height: 20.h,
+                                        width: 90.w,
+                                        child: Stack(children: [
+                                          Positioned.fill(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 10.0,
+                                              ),
+                                              child: Align(
+                                                alignment: Alignment.topLeft,
+                                                child: Text(
+                                                  "Invite Friends & Earn",
+                                                  style: GlobalTextStyles
+                                                      .secondaryText1(
+                                                          textColor:
+                                                              FlutterFlowTheme.of(
+                                                                      context)
+                                                                  .primary1,
+                                                          txtWeight:
+                                                              FontWeight.bold),
+                                                ),
+                                              ),
+                                            ),
+
+                                            // Add more Positioned widgets for additional images
+                                          ),
+                                          Positioned.fill(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: 10.0,
+                                              ),
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: RichText(
+                                                  text: TextSpan(
+                                                    text:
+                                                        "For every user you invite and signs up, you can Earn Upto ",
+                                                    style: GlobalTextStyles
+                                                        .secondaryText2(
+                                                            txtSize: 16,
+                                                            textColor:
+                                                                FlutterFlowTheme.of(
+                                                                        context)
+                                                                    .primary1,
+                                                            txtWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                    children: [
+                                                      TextSpan(
+                                                        text: "₹100",
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      TextSpan(
+                                                        text: ".",
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+
+                                            // Add more Positioned widgets for additional images
+                                          ),
+                                          Positioned.fill(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 10.0,
+                                              ),
+                                              child: Align(
+                                                alignment: Alignment.bottomLeft,
+                                                child: InkWell(
+                                                  splashColor:
+                                                      FlutterFlowTheme.of(
+                                                              context)
+                                                          .secondary,
+                                                  onTap: () {
+                                                    shareApp(context);
+                                                  },
+                                                  child: Container(
+                                                    height: 5.h,
+                                                    width: 40.w,
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          FlutterFlowTheme.of(
+                                                                  context)
+                                                              .primary,
+                                                      borderRadius:
+                                                          BorderRadius.all(
+                                                              Radius.circular(
+                                                                  10.0)),
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        "Share",
+                                                        style: GlobalTextStyles
+                                                            .secondaryText2(
+                                                                txtWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                txtSize: 16,
+                                                                textColor: FlutterFlowTheme.of(
+                                                                        context)
+                                                                    .secondary),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+
+                                            // Add more Positioned widgets for additional images
+                                          ),
+                                        ]),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -2399,8 +1245,27 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
             child: FloatingActionButton(
               backgroundColor: FlutterFlowTheme.of(context).primary,
               onPressed: () {
-                // shareApp(context);
-                _showBottomSheet(context, 0);
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    transitionDuration: Duration(milliseconds: 400),
+                    pageBuilder: (_, __, ___) => SaveMoney(
+                      getMobile: widget.getMobile,
+                      getUserName:
+                          ref.read(UserDashListProvider.notifier).getUser,
+                    ),
+                    transitionsBuilder: (_, animation, __, child) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin:
+                              Offset(0, 1), // You can adjust the start position
+                          end: Offset.zero, // You can adjust the end position
+                        ).animate(animation),
+                        child: child,
+                      );
+                    },
+                  ),
+                );
               },
               child: Icon(
                 Icons.currency_rupee_outlined,
@@ -2422,32 +1287,22 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                   child: BottomNavigationBar(
                     items: <BottomNavigationBarItem>[
                       BottomNavigationBarItem(
-                        icon: Image.asset(
-                          'images/savings.png',
-                          fit: BoxFit.contain,
-                          height: 25,
-                          width: 25,
+                        icon: Icon(
+                          Icons.home,
+                          color: FlutterFlowTheme.of(context)
+                              .secondary, // You can set your desired color here
+                          size: 25,
                         ),
-                        label: "Savings",
-                        backgroundColor: FlutterFlowTheme.of(context).primary,
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Image.asset(
-                          'images/cashback.png',
-                          fit: BoxFit.contain,
-                          height: 25,
-                          width: 25,
-                        ),
-                        label: "Cashback",
+                        label: "Home",
                         backgroundColor: FlutterFlowTheme.of(context).primary,
                       ),
                       BottomNavigationBarItem(
                         icon: Stack(alignment: Alignment.topRight, children: [
-                          Image.asset(
-                            'images/message.png',
-                            fit: BoxFit.contain,
-                            height: 25,
-                            width: 25,
+                          Icon(
+                            Icons.message,
+                            color: FlutterFlowTheme.of(context).secondary,
+                            // You can set your desired color here
+                            size: 25,
                           ),
                           Visibility(
                             visible: ref
@@ -2485,14 +1340,14 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                       ),
                       BottomNavigationBarItem(
                         icon: Stack(alignment: Alignment.center, children: [
-                          Image.asset(
-                            'images/download.png',
-                            fit: BoxFit.contain,
-                            height: 25,
-                            width: 25,
+                          Icon(
+                            Icons.person,
+                            color: FlutterFlowTheme.of(context).secondary,
+                            // You can set your desired color here
+                            size: 25,
                           ),
                         ]),
-                        label: "Withdraw",
+                        label: "Profile",
                         backgroundColor: FlutterFlowTheme.of(context)
                             .primary
                             .withOpacity(0.95),
@@ -2526,13 +1381,13 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
       _selectedIndex = index;
 
       //todo:- 28.8.23 - based on index selected, showing money request option saving / cashback
-      if (_selectedIndex == 0) {
-        isSavAmntReq = true;
-      } else if (_selectedIndex == 1) {
-        isSavAmntReq = false;
-      }
+      // if (_selectedIndex == 0) {
+      //   isSavAmntReq = true;
+      // } else if (_selectedIndex == 1) {
+      //   isSavAmntReq = false;
+      // }
 
-      if (_selectedIndex == 2) {
+      if (_selectedIndex == 1) {
         Navigator.push(
             context,
             MaterialPageRoute(
@@ -2548,14 +1403,30 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
           //     .read(UserDashListProvider.notifier)
           //     .getUserDetails(widget.getMobile);
         });
-      } else if (_selectedIndex == 3) {
-        // _showBottomSheet(context, 0);
-        ref
-            .read(UserDashListProvider.notifier)
-            .getUserDetails(widget.getMobile);
-
-        txtReqAmount.text = "";
-        _showBottomSheet(context, 1);
+      } else if (_selectedIndex == 2) {
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            transitionDuration: Duration(milliseconds: 200),
+            pageBuilder: (_, __, ___) => ProfileScreen(
+              userName: ref.read(UserDashListProvider.notifier).getUser,
+              cashBack: ref
+                  .read(UserDashListProvider.notifier)
+                  .getNetIntbalance
+                  .toStringAsFixed(2),
+              netBalance: ref
+                  .read(UserDashListProvider.notifier)
+                  .getNetbalance
+                  .toStringAsFixed(2),
+            ),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+          ),
+        );
       }
     });
   }
@@ -2587,6 +1458,34 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
           ],
         ),
       );
+    }
+  }
+
+  //todo:- 30.11.23 get current token value in collection
+  Future<void> getDocumentIDsAndData() async {
+    final CollectionReference collectionRef =
+        FirebaseFirestore.instance.collection('AdminToken');
+
+    // Get the documents in the collection
+    QuerySnapshot querySnapshot = await collectionRef.get();
+
+    // Iterate through the documents in the snapshot
+    for (QueryDocumentSnapshot documentSnapshot in querySnapshot.docs) {
+      // Access the document ID
+      String documentID = documentSnapshot.id;
+
+      // Access the document data as a Map
+      Map<String, dynamic> documentData =
+          documentSnapshot.data() as Map<String, dynamic>;
+
+      // Access the value of the field (assuming there's only one field)
+      dynamic fieldValue = documentData['token'];
+
+      // Print the document ID and field value
+      print('Document ID: $documentID, Token Value: $fieldValue');
+
+      //todo:- saving admin token from firestore, so that, user trigger notification to that token
+      Constants.adminDeviceToken = fieldValue ?? "";
     }
   }
 
@@ -2634,36 +1533,48 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                 child: InkWell(
                                   splashColor: Colors.red, // Splash color
                                   onTap: () async {
-                                    //venkatjai.j@oksbi
-                                    //ganeshmani1294@okaxis
-                                    // String upiurl =
-                                    //     'upi://pay?pa=venkatjai.j@oksbi&pn=babu&tn=TestingGpay&am=10&cu=INR';
-                                    // var uri = Uri.parse(upiurl);
+                                    //todo:- 29.9.23 allowing user to get account details to search in gpay
 
-                                    // if (await canLaunch(uri)) {
-                                    //   await launch(uri);
-                                    // } else {
-                                    //   print(
-                                    //       'Could not launch the app with URI: $uri');
-                                    // }
+                                    showDialog(
+                                        barrierDismissible: false,
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return CustomDialogBox(
+                                            title: "Do Paste in Search Bar!",
+                                            descriptions:
+                                                "We've securely copied account details for you. To make a payment and save more money, simply open Google Pay and paste the details there.",
+                                            text: "Ok",
+                                            isNo: false,
+                                            isCancel: true,
+                                            onTap: () async {
+                                              final String defaultValue = ref
+                                                          .read(
+                                                              UserDashListProvider
+                                                                  .notifier)
+                                                          .getAdminType ==
+                                                      "1"
+                                                  ? Constants.admin1Gpay
+                                                  : Constants.admin2Gpay;
+                                              Clipboard.setData(ClipboardData(
+                                                  text: defaultValue));
 
-                                    // if (!await launchUrl(uri)) {
-                                    //   throw Exception('Could not launch $uri');
-                                    // }
+                                              var openAppResult =
+                                                  await LaunchApp.openApp(
+                                                openStore: true,
+                                                androidPackageName:
+                                                    'com.google.android.apps.nbu.paisa.user',
+                                                // iosUrlScheme: 'pulsesecure://',
+                                                // appStoreLink:
+                                                //     'itms-apps://itunes.apple.com/us/app/pulse-secure/id945832041',
+                                                iosUrlScheme: 'hjfg',
+                                                appStoreLink:
+                                                    'https://apps.apple.com/in/app/google-pay-save-pay-manage/id1193357041',
+                                              );
 
-                                    //todo:- uncomment below line
-
-                                    var openAppResult = await LaunchApp.openApp(
-                                      openStore: true,
-                                      androidPackageName:
-                                          'com.google.android.apps.nbu.paisa.user',
-                                      // iosUrlScheme: 'pulsesecure://',
-                                      // appStoreLink:
-                                      //     'itms-apps://itunes.apple.com/us/app/pulse-secure/id945832041',
-                                      iosUrlScheme: 'hjfg',
-                                      appStoreLink:
-                                          'https://apps.apple.com/in/app/google-pay-save-pay-manage/id1193357041',
-                                    );
+                                              Navigator.pop(context);
+                                            },
+                                          );
+                                        });
                                   },
                                   child: Image.asset(
                                     'images/gpay2.png',
@@ -2698,20 +1609,45 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                 child: InkWell(
                                   splashColor: Colors.red, // Splash color
                                   onTap: () async {
-                                    // var uri = Uri.parse(
-                                    //     'upi://pay?pa=ganeshmani1294@okaxis');
-                                    //
-                                    // if (!await launchUrl(uri)) {
-                                    //   throw Exception('Could not launch $uri');
-                                    // }
+                                    //todo:-  showing message to user
 
-                                    var openAppResult = await LaunchApp.openApp(
-                                      openStore: true,
-                                      androidPackageName: 'com.phonepe.app',
-                                      iosUrlScheme: 'sf',
-                                      appStoreLink:
-                                          'https://apps.apple.com/in/app/phonepe-secure-payments-app/id1170055821',
-                                    );
+                                    showDialog(
+                                        barrierDismissible: false,
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return CustomDialogBox(
+                                            title: "Do Paste in Search Bar!",
+                                            descriptions:
+                                                "We've securely copied account details for you. To make a payment and save more money, simply open PhonePe and paste the details there.",
+                                            text: "Ok",
+                                            isNo: false,
+                                            isCancel: true,
+                                            onTap: () async {
+                                              final String defaultValue = ref
+                                                          .read(
+                                                              UserDashListProvider
+                                                                  .notifier)
+                                                          .getAdminType ==
+                                                      "1"
+                                                  ? Constants.admin1Gpay
+                                                  : Constants.admin2Gpay;
+                                              Clipboard.setData(ClipboardData(
+                                                  text: defaultValue));
+
+                                              var openAppResult =
+                                                  await LaunchApp.openApp(
+                                                openStore: true,
+                                                androidPackageName:
+                                                    'com.phonepe.app',
+                                                iosUrlScheme: 'sf',
+                                                appStoreLink:
+                                                    'https://apps.apple.com/in/app/phonepe-secure-payments-app/id1170055821',
+                                              );
+
+                                              Navigator.pop(context);
+                                            },
+                                          );
+                                        });
                                   },
                                   child: Image.asset(
                                     'images/phonepe1.png',
@@ -2780,7 +1716,15 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                   ),
                                   Text(
                                       // ref.read(UserDashListProvider.notifier).getIsMoneyReq!
-                                      getPaidStatus! ? "UnPaid" : "Paid",
+                                      ref
+                                                  .read(txtMoneyReqCanStatus
+                                                      .notifier)
+                                                  .state ==
+                                              true
+                                          ? "Cancelled"
+                                          : getPaidStatus!
+                                              ? "UnPaid"
+                                              : "Paid",
                                       style: TextStyle(
                                           color: FlutterFlowTheme.of(context)
                                               .secondary,
@@ -2794,7 +1738,8 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                               padding: const EdgeInsets.all(8.0),
                               child: TextFormField(
                                 controller: txtReqAmount,
-                                keyboardType: TextInputType.number,
+                                keyboardType: TextInputType.numberWithOptions(
+                                    decimal: true),
                                 decoration: InputDecoration(
                                   labelText: 'Enter amount',
                                   border: OutlineInputBorder(),
@@ -2803,211 +1748,56 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                             ),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 ElevatedButton(
-                                  onPressed: () async {
-                                    double amount = txtReqAmount.text.isEmpty
-                                        ? 0
-                                        : double.parse(txtReqAmount.text);
-                                    if (amount != 0) {
-                                      if (amount >
-                                          ref
+                                  onPressed: () async {},
+                                  child: Text('Request'),
+                                ),
+                                Visibility(
+                                  visible: ref
                                               .read(
                                                   UserDashListProvider.notifier)
-                                              .getNetbalance) {
-                                        Constants.showToast(
-                                            "Requested amount greater than Netbalance",
-                                            ToastGravity.CENTER);
-                                        return;
-                                      } else {
-                                        if (getPaidStatus) {
-                                          showDialog(
-                                              barrierDismissible: false,
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return CustomDialogBox(
-                                                  title: "Alert!",
-                                                  descriptions:
-                                                      "Your last Request ₹${ref.read(UserDashListProvider.notifier).getLastReqAmount!.toStringAsFixed(2)} is Not Paid, Do you want add More Request",
-                                                  text: "Ok",
-                                                  isNo: true,
-                                                  isCancel: true,
-                                                  onTap: () async {
-                                                    double amount = txtReqAmount
-                                                            .text.isEmpty
-                                                        ? 0
-                                                        : double.parse(
-                                                                txtReqAmount
-                                                                    .text) +
-                                                            ref
-                                                                .read(UserDashListProvider
-                                                                    .notifier)
-                                                                .getLastReqAmount!;
-                                                    if (amount != 0) {
-                                                      if (amount >
-                                                          ref
-                                                              .read(
-                                                                  UserDashListProvider
-                                                                      .notifier)
-                                                              .getNetbalance) {
-                                                        Constants.showToast(
-                                                            "Requested amount greater than Netbalance",
-                                                            ToastGravity
-                                                                .CENTER);
-                                                      } else {
-                                                        amount = double.parse(
-                                                                txtReqAmount
-                                                                    .text) +
-                                                            ref
-                                                                .read(UserDashListProvider
-                                                                    .notifier)
-                                                                .getLastReqAmount!;
-
-                                                        await ref
+                                              .getLastReqAmount! !=
+                                          0
+                                      ? true
+                                      : false,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      showDialog(
+                                          barrierDismissible: false,
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return CustomDialogBox(
+                                              title: "Alert!",
+                                              descriptions:
+                                                  "Are you sure, Do you want to Cancel Money Request",
+                                              text: "Ok",
+                                              isNo: false,
+                                              isCancel: true,
+                                              onTap: () async {
+                                                await ref
+                                                    .read(UserDashListProvider
+                                                        .notifier)
+                                                    .canclRequest(
+                                                        ref
                                                             .read(
                                                                 UserDashListProvider
                                                                     .notifier)
-                                                            .updateData(
-                                                                true,
-                                                                amount,
-                                                                ref
-                                                                    .read(UserDashListProvider
-                                                                        .notifier)
-                                                                    .getDocId,
-                                                                widget
-                                                                    .getMobile);
-                                                        Navigator.pop(context);
-                                                      }
-                                                    } else {
-                                                      Constants.showToast(
-                                                          txtReqAmount
-                                                                  .text.isEmpty
-                                                              ? "Please Enter Amount"
-                                                              : "Please Enter Valid Amount",
-                                                          ToastGravity.CENTER);
-                                                    }
-                                                    Navigator.pop(context);
-                                                  },
-                                                  onNoTap: () async {
-                                                    double amount = txtReqAmount
-                                                            .text.isEmpty
-                                                        ? 0
-                                                        : double.parse(
-                                                            txtReqAmount.text);
-                                                    if (amount != 0) {
-                                                      if (amount >
-                                                          ref
-                                                              .read(
-                                                                  UserDashListProvider
-                                                                      .notifier)
-                                                              .getNetbalance) {
-                                                        Constants.showToast(
-                                                            "Requested amount greater than Netbalance",
-                                                            ToastGravity
-                                                                .CENTER);
-                                                      } else {
-                                                        amount = double.parse(
-                                                            txtReqAmount.text);
+                                                            .getDocId,
+                                                        true,
+                                                        widget.getMobile);
 
-                                                        await ref
-                                                            .read(
-                                                                UserDashListProvider
-                                                                    .notifier)
-                                                            .updateData(
-                                                                true,
-                                                                amount,
-                                                                ref
-                                                                    .read(UserDashListProvider
-                                                                        .notifier)
-                                                                    .getDocId,
-                                                                widget
-                                                                    .getMobile);
-                                                        Navigator.pop(context);
-                                                      }
-                                                    } else {
-                                                      Constants.showToast(
-                                                          txtReqAmount
-                                                                  .text.isEmpty
-                                                              ? "Please Enter Amount"
-                                                              : "Please Enter Valid Amount",
-                                                          ToastGravity.CENTER);
-                                                    }
-                                                    Navigator.pop(context);
-                                                  },
-                                                );
-                                              });
-                                        } else {
-                                          showDialog(
-                                              barrierDismissible: false,
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return CustomDialogBox(
-                                                  title: "Alert!",
-                                                  descriptions:
-                                                      "Are you sure, Do you want to Request Money",
-                                                  text: "Ok",
-                                                  isCancel: true,
-                                                  onTap: () async {
-                                                    double amount = txtReqAmount
-                                                            .text.isEmpty
-                                                        ? 0
-                                                        : double.parse(
-                                                            txtReqAmount.text);
-                                                    if (amount != 0) {
-                                                      if (amount >
-                                                          ref
-                                                              .read(
-                                                                  UserDashListProvider
-                                                                      .notifier)
-                                                              .getNetbalance) {
-                                                        Constants.showToast(
-                                                            "Requested amount greater than Netbalance",
-                                                            ToastGravity
-                                                                .CENTER);
-                                                      } else {
-                                                        amount = double.parse(
-                                                            txtReqAmount.text);
+                                                Navigator.pop(context);
 
-                                                        await ref
-                                                            .read(
-                                                                UserDashListProvider
-                                                                    .notifier)
-                                                            .updateData(
-                                                                true,
-                                                                amount,
-                                                                ref
-                                                                    .read(UserDashListProvider
-                                                                        .notifier)
-                                                                    .getDocId,
-                                                                widget
-                                                                    .getMobile);
-                                                        Navigator.pop(context);
-                                                      }
-                                                    } else {
-                                                      Constants.showToast(
-                                                          txtReqAmount
-                                                                  .text.isEmpty
-                                                              ? "Please Enter Amount"
-                                                              : "Please Enter Valid Amount",
-                                                          ToastGravity.CENTER);
-                                                    }
-                                                    Navigator.pop(context);
-                                                  },
-                                                );
-                                              });
-                                        }
-                                      }
-                                    } else {
-                                      Constants.showToast(
-                                          txtReqAmount.text.isEmpty
-                                              ? "Please Enter Amount"
-                                              : "Please Enter Valid Amount",
-                                          ToastGravity.CENTER);
-                                      return;
-                                    }
-                                  },
-                                  child: Text('Request'),
+                                                //todo:- pops bottom sheet
+                                                Navigator.pop(context);
+                                              },
+                                            );
+                                          });
+                                    },
+                                    child: Text('Cancel Request'),
+                                  ),
                                 ),
                               ],
                             ),
@@ -3058,13 +1848,23 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                   ),
                                   Text(
                                       // ref.read(UserDashListProvider.notifier).getIsMoneyReq!
-                                      getCashbckPaidStatus! ? "UnPaid" : "Paid",
-                                      style: TextStyle(
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 22.0,
-                                          letterSpacing: 1)),
+                                      ref
+                                                  .read(txtCashbckReqCanStatus
+                                                      .notifier)
+                                                  .state ==
+                                              true
+                                          ? "Cancelled"
+                                          : getCashbckPaidStatus!
+                                              ? "UnPaid"
+                                              : "Paid",
+                                      style:
+                                          TextStyle(
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .secondary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 22.0,
+                                              letterSpacing: 1)),
                                 ],
                               ),
                             ),
@@ -3072,7 +1872,8 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                               padding: const EdgeInsets.all(8.0),
                               child: TextFormField(
                                 controller: txtReqAmount,
-                                keyboardType: TextInputType.number,
+                                keyboardType: TextInputType.numberWithOptions(
+                                    decimal: true),
                                 decoration: InputDecoration(
                                   labelText: 'Enter amount',
                                   border: OutlineInputBorder(),
@@ -3081,7 +1882,7 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                             ),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 ElevatedButton(
                                   onPressed: () async {
@@ -3099,7 +1900,7 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                             ToastGravity.CENTER);
                                         return;
                                       } else {
-                                        if (getCashbckPaidStatus) {
+                                        if (getCashbckPaidStatus ?? false) {
                                           showDialog(
                                               barrierDismissible: false,
                                               context: context,
@@ -3111,108 +1912,8 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                                   text: "Ok",
                                                   isNo: true,
                                                   isCancel: true,
-                                                  onTap: () async {
-                                                    double amount = txtReqAmount
-                                                            .text.isEmpty
-                                                        ? 0
-                                                        : double.parse(
-                                                                txtReqAmount
-                                                                    .text) +
-                                                            ref
-                                                                .read(UserDashListProvider
-                                                                    .notifier)
-                                                                .getLastCashbckReqAmount!;
-                                                    if (amount != 0) {
-                                                      if (amount >
-                                                          ref
-                                                              .read(
-                                                                  UserDashListProvider
-                                                                      .notifier)
-                                                              .getNetIntbalance) {
-                                                        Constants.showToast(
-                                                            "Requested amount greater than Cashback Netbalance",
-                                                            ToastGravity
-                                                                .CENTER);
-                                                      } else {
-                                                        amount = double.parse(
-                                                                txtReqAmount
-                                                                    .text) +
-                                                            ref
-                                                                .read(UserDashListProvider
-                                                                    .notifier)
-                                                                .getLastCashbckReqAmount!;
-
-                                                        await ref
-                                                            .read(
-                                                                UserDashListProvider
-                                                                    .notifier)
-                                                            .updateData(
-                                                                false,
-                                                                amount,
-                                                                ref
-                                                                    .read(UserDashListProvider
-                                                                        .notifier)
-                                                                    .getDocId,
-                                                                widget
-                                                                    .getMobile);
-                                                        Navigator.pop(context);
-                                                      }
-                                                    } else {
-                                                      Constants.showToast(
-                                                          txtReqAmount
-                                                                  .text.isEmpty
-                                                              ? "Please Enter Amount"
-                                                              : "Please Enter Valid Amount",
-                                                          ToastGravity.CENTER);
-                                                    }
-                                                    Navigator.pop(context);
-                                                  },
-                                                  onNoTap: () async {
-                                                    double amount = txtReqAmount
-                                                            .text.isEmpty
-                                                        ? 0
-                                                        : double.parse(
-                                                            txtReqAmount.text);
-                                                    if (amount != 0) {
-                                                      if (amount >
-                                                          ref
-                                                              .read(
-                                                                  UserDashListProvider
-                                                                      .notifier)
-                                                              .getNetbalance) {
-                                                        Constants.showToast(
-                                                            "Requested amount greater than Netbalance",
-                                                            ToastGravity
-                                                                .CENTER);
-                                                      } else {
-                                                        amount = double.parse(
-                                                            txtReqAmount.text);
-
-                                                        await ref
-                                                            .read(
-                                                                UserDashListProvider
-                                                                    .notifier)
-                                                            .updateData(
-                                                                false,
-                                                                amount,
-                                                                ref
-                                                                    .read(UserDashListProvider
-                                                                        .notifier)
-                                                                    .getDocId,
-                                                                widget
-                                                                    .getMobile);
-                                                        Navigator.pop(context);
-                                                      }
-                                                    } else {
-                                                      Constants.showToast(
-                                                          txtReqAmount
-                                                                  .text.isEmpty
-                                                              ? "Please Enter Amount"
-                                                              : "Please Enter Valid Amount",
-                                                          ToastGravity.CENTER);
-                                                    }
-                                                    Navigator.pop(context);
-                                                  },
+                                                  onTap: () async {},
+                                                  onNoTap: () async {},
                                                 );
                                               });
                                         } else {
@@ -3226,52 +1927,7 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                                       "Are you sure, Do you want to Request Money",
                                                   text: "Ok",
                                                   isCancel: true,
-                                                  onTap: () async {
-                                                    double amount = txtReqAmount
-                                                            .text.isEmpty
-                                                        ? 0
-                                                        : double.parse(
-                                                            txtReqAmount.text);
-                                                    if (amount != 0) {
-                                                      if (amount >
-                                                          ref
-                                                              .read(
-                                                                  UserDashListProvider
-                                                                      .notifier)
-                                                              .getNetbalance) {
-                                                        Constants.showToast(
-                                                            "Requested amount greater than Netbalance",
-                                                            ToastGravity
-                                                                .CENTER);
-                                                      } else {
-                                                        amount = double.parse(
-                                                            txtReqAmount.text);
-
-                                                        await ref
-                                                            .read(
-                                                                UserDashListProvider
-                                                                    .notifier)
-                                                            .updateData(
-                                                                false,
-                                                                amount,
-                                                                ref
-                                                                    .read(UserDashListProvider
-                                                                        .notifier)
-                                                                    .getDocId,
-                                                                widget
-                                                                    .getMobile);
-                                                        Navigator.pop(context);
-                                                      }
-                                                    } else {
-                                                      Constants.showToast(
-                                                          txtReqAmount
-                                                                  .text.isEmpty
-                                                              ? "Please Enter Amount"
-                                                              : "Please Enter Valid Amount",
-                                                          ToastGravity.CENTER);
-                                                    }
-                                                    Navigator.pop(context);
-                                                  },
+                                                  onTap: () async {},
                                                 );
                                               });
                                         }
@@ -3286,6 +1942,51 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
                                     }
                                   },
                                   child: Text('Request'),
+                                ),
+                                Visibility(
+                                  visible: ref
+                                              .read(
+                                                  UserDashListProvider.notifier)
+                                              .getLastReqAmount! !=
+                                          0
+                                      ? true
+                                      : false,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      showDialog(
+                                          barrierDismissible: false,
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return CustomDialogBox(
+                                              title: "Alert!",
+                                              descriptions:
+                                                  "Are you sure, Do you want to Cancel Cashback Request",
+                                              text: "Ok",
+                                              isNo: false,
+                                              isCancel: true,
+                                              onTap: () async {
+                                                await ref
+                                                    .read(UserDashListProvider
+                                                        .notifier)
+                                                    .canclRequest(
+                                                        ref
+                                                            .read(
+                                                                UserDashListProvider
+                                                                    .notifier)
+                                                            .getDocId,
+                                                        false,
+                                                        widget.getMobile);
+
+                                                Navigator.pop(context);
+
+                                                //todo:- pops bottom sheet
+                                                Navigator.pop(context);
+                                              },
+                                            );
+                                          });
+                                    },
+                                    child: Text('Cancel Request'),
+                                  ),
                                 ),
                               ],
                             ),
@@ -3304,265 +2005,63 @@ class _BudgetWidgetState extends ConsumerState<BudgetWidget>
         .getUserDetails(widget.getMobile);
   }
 
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 5), (Timer timer) {
-      setState(() {
-        _currentIndex = (_currentIndex + 1) % 3;
-
-        _scrollToIndex(_currentIndex);
-      });
-    });
-  }
-
-  void _scrollToIndex(int index) {
-    if (index >= 0 && index < 3) {
-      _scrollController.animateTo(
-        index * 100.w,
-        duration: Duration(milliseconds: 1200),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  SliverPersistentHeader makeHeader(String headerText, bool isShowFilter) {
+  SliverPersistentHeader makeTitleHeader(String headerText, bool isViewAll) {
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverAppBarDelegate(
-          minHeight: 50.0,
-          maxHeight: 60.0,
-          child: Container(
-              alignment: Alignment.centerLeft,
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(5),
-                child: Visibility(
-                  visible: isShowFilter,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      InkWell(
-                        onTap: () async {
-                          final selectedRange = await showDateRangePicker(
-                              context: context,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2100),
-                              fieldEndHintText: '');
-
-                          if (selectedRange != null) {
-                            setState(() {
-                              ref
-                                  .read(UserDashListProvider.notifier)
-                                  .startDate = selectedRange.start;
-                              ref.read(UserDashListProvider.notifier).endDate =
-                                  selectedRange.end;
-                            });
-                            ref
-                                .read(UserDashListProvider.notifier)
-                                .getUserDetails(widget.getMobile);
-                          }
-                        },
-                        child: Container(
-                          alignment: Alignment.center,
-                          width: MediaQuery.of(context).size.width / 3.2,
-                          height: MediaQuery.of(context).size.height / 22,
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(width: 1, color: Colors.grey)),
-                          child: Center(
-                              child: Padding(
-                            padding: const EdgeInsets.only(left: 8.0, right: 8),
-                            child: Text.rich(
-                              TextSpan(
-                                text: ref
-                                            .read(UserDashListProvider.notifier)
-                                            .startDate ==
-                                        null
-                                    ? 'Start from:'
-                                    : '',
-                                children: [
-                                  TextSpan(
-                                    text:
-                                        ' ${ref.read(UserDashListProvider.notifier).startDate?.toString().substring(0, 10) ?? ''}',
-                                    style: TextStyle(
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              style: const TextStyle(
-                                  letterSpacing: 1,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          )),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(2.0),
-                        child: Icon(
-                          Icons.arrow_forward_ios,
-                          color: FlutterFlowTheme.of(context).primary,
-                          size: 15,
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () async {
-                          final selectedRange = await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2023),
-                            lastDate: DateTime(2100),
-                          );
-
-                          if (selectedRange != null) {
-                            setState(() {
-                              ref
-                                  .read(UserDashListProvider.notifier)
-                                  .startDate = selectedRange.start;
-                              ref.read(UserDashListProvider.notifier).endDate =
-                                  selectedRange.end;
-                            });
-                            ref
-                                .read(UserDashListProvider.notifier)
-                                .getUserDetails(widget.getMobile);
-                          }
-                        },
-                        child: Container(
-                          alignment: Alignment.center,
-                          width: MediaQuery.of(context).size.width / 3.2,
-                          height: MediaQuery.of(context).size.height / 22,
-                          // margin: const EdgeInsets.all(10.0),
-                          // padding: const EdgeInsets.all(3.0),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(width: 1, color: Colors.grey)),
-                          child: Center(
-                              child: Padding(
-                            padding: const EdgeInsets.only(left: 8.0, right: 8),
-                            child: Text.rich(
-                              TextSpan(
-                                text: ref
-                                            .read(UserDashListProvider.notifier)
-                                            .endDate ==
-                                        null
-                                    ? 'End to:'
-                                    : '',
-                                children: [
-                                  TextSpan(
-                                    text:
-                                        ' ${ref.read(UserDashListProvider.notifier).endDate?.toString().substring(0, 10) ?? ''}',
-                                    style: TextStyle(
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              style: const TextStyle(
-                                  letterSpacing: 1,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          )),
-                        ),
-                      ),
-                      ref.read(UserDashListProvider.notifier).startDate !=
-                                  null ||
-                              ref.read(UserDashListProvider.notifier).endDate !=
-                                  null
-                          ? Padding(
-                              padding: const EdgeInsets.all(3.0),
-                              child: Center(
-                                  child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(
-                                          50), // Adjust the radius as needed
-                                      child: Material(
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary, // Replace with your desired icon background color
-                                        child: InkWell(
-                                          onTap: () {
-                                            setState(() {
-                                              ref
-                                                  .read(UserDashListProvider
-                                                      .notifier)
-                                                  .startDate = null;
-                                              ref
-                                                  .read(UserDashListProvider
-                                                      .notifier)
-                                                  .endDate = null;
-
-                                              ref
-                                                  .read(UserDashListProvider
-                                                      .notifier)
-                                                  .getUserDetails(
-                                                      widget.getMobile);
-                                            });
-                                          },
-                                          child: const SizedBox(
-                                            width: 28,
-                                            height: 28,
-                                            child: Icon(
-                                              Icons.clear,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ))))
-                          : Container(),
-                    ],
+        minHeight: 50.0,
+        maxHeight: 70.0,
+        child: Container(
+            alignment: Alignment.centerLeft,
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    headerText,
+                    style: GlobalTextStyles.secondaryText1(
+                        textColor: FlutterFlowTheme.of(context).primary,
+                        txtWeight: FontWeight.w700),
                   ),
-                ),
-              ))),
+                  Visibility(
+                    visible: isViewAll,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            transitionDuration: Duration(milliseconds: 400),
+                            pageBuilder: (_, __, ___) => TransactionHistory(
+                                getMobile: widget.getMobile, isSavingHis: true),
+                            transitionsBuilder: (_, animation, __, child) {
+                              return SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: Offset(0,
+                                      1), // You can adjust the start position
+                                  end: Offset
+                                      .zero, // You can adjust the end position
+                                ).animate(animation),
+                                child: child,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      child: Text(
+                        "View All",
+                        style: GlobalTextStyles.secondaryText1(
+                            txtSize: 16,
+                            textColor: FlutterFlowTheme.of(context).secondary2,
+                            txtWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+      ),
     );
-  }
-}
-
-class ImageClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 50); // Start at the bottom-left corner
-    path.quadraticBezierTo(
-      // Add a quadratic bezier curve
-      size.width / 2, size.height, // Control point and end point
-      size.width, size.height - 50, // Control point and end point
-    );
-    path.lineTo(size.width, 0); // Draw a straight line to the top-right corner
-    path.close(); // Close the path to form a closed shape
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
-    return false;
-  }
-}
-
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate({
-    @required this.minHeight,
-    @required this.maxHeight,
-    @required this.child,
-  });
-
-  final double? minHeight;
-  final double? maxHeight;
-  final Widget? child;
-
-  @override
-  double get minExtent => minHeight!;
-
-  @override
-  double get maxExtent => math.max(maxHeight!, minHeight!);
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return SizedBox.expand(child: child);
-  }
-
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return maxHeight != oldDelegate.maxHeight ||
-        minHeight != oldDelegate.minHeight ||
-        child != oldDelegate.child;
   }
 }
